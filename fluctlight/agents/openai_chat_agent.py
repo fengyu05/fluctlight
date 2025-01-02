@@ -15,13 +15,16 @@ from fluctlight.open import OPENAI_CLIENT
 from fluctlight.open.chat_utils import get_message_from_completion
 from fluctlight.open.common import AUDIO_INPUT_SUPPORT_TYPE, VISION_INPUT_SUPPORT_TYPE
 from fluctlight.settings import (
-    OPENAI_GPT_MODEL_ID,
+    OPENAI_CHATBOT_MODEL_ID,
     SLACK_APP_OAUTH_TOKENS_FOR_WS,
     is_slack_bot,
 )
 from fluctlight.utt.files import base64_encode_media, download_media
 
 logger = get_logger(__name__)
+
+# For override
+_OPENAI_CHATBOT_MODEL_ID = OPENAI_CHATBOT_MODEL_ID
 
 
 _AGENT_DESCRIPTION = """ Use this agent to make a natural converastion between the assistant bot and user.
@@ -58,6 +61,12 @@ class OpenAiChatAgent(MessageIntentAgent):
     def description(self) -> str:
         return _AGENT_DESCRIPTION
 
+    def get_system_role(self, model_id: str = "") -> str:
+        if model_id.startswith("o1"):
+            return "developer"
+        else:
+            return "system"
+
     def process_message(
         self, message: IMessage, message_intent: MessageIntent
     ) -> list[str]:
@@ -75,7 +84,10 @@ class OpenAiChatAgent(MessageIntentAgent):
             self.message_buffer.move_to_end(thread_id)
         else:
             self.message_buffer[thread_id] = [
-                {"role": "system", "content": prompt_bank.CONVERSATION_BOT_1}
+                {
+                    "role": self.get_system_role(model_id=_OPENAI_CHATBOT_MODEL_ID),
+                    "content": prompt_bank.CONVERSATION_BOT_1,
+                }
             ]
 
         # If the buffer exceeds limit items, remove the oldest one
@@ -110,7 +122,7 @@ class OpenAiChatAgent(MessageIntentAgent):
         self, messages: list[ChatCompletionMessageParam]
     ) -> ChatCompletion:
         return OPENAI_CLIENT.chat.completions.create(
-            model=OPENAI_GPT_MODEL_ID,
+            model=_OPENAI_CHATBOT_MODEL_ID,
             messages=messages,
         )
 

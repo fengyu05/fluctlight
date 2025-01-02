@@ -1,0 +1,12 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "driver": "PostgreSQL",
+            "name": "fluctlight-db",
+            "group": "fluctlight",
+            "connectString": "postgresql://postgres:postgres@localhost:5432/postgres"
+        }
+    ]
+}
