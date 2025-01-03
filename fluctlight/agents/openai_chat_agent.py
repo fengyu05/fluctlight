@@ -3,7 +3,6 @@ from typing import Any, Callable
 
 from langsmith import traceable
 from openai.types.chat import ChatCompletion
-from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 
 import fluctlight.agents.prompt_bank as prompt_bank
 from fluctlight.agents.message_intent_agent import MessageIntentAgent
@@ -94,10 +93,7 @@ class OpenAiChatAgent(MessageIntentAgent):
             self.message_buffer.popitem(last=False)
 
         content = [{"type": "text", "text": message.text}]
-        model_id = _OPENAI_CHATBOT_MODEL_ID
         if message.has_attachments:
-            # fallback to GPT-4O if message has attachments
-            model_id = GPT_4O
             content_from_files = self.process_files(message)
             content.extend(content_from_files)
 
@@ -109,8 +105,8 @@ class OpenAiChatAgent(MessageIntentAgent):
         )
         response = self.chat_complete(
             messages=self.message_buffer[thread_id],
-            model_id=model_id,
         )
+        logger.info("response", response=response)
         output_text = get_message_from_completion(response)
         self.message_buffer[thread_id].append(
             {
@@ -123,13 +119,26 @@ class OpenAiChatAgent(MessageIntentAgent):
     @traceable(run_type="llm", name="chat_agent")
     def chat_complete(
         self,
-        messages: list[ChatCompletionMessageParam],
+        messages: list[dict[str, Any]],
         model_id: str = _OPENAI_CHATBOT_MODEL_ID,
     ) -> ChatCompletion:
+        logger.info("chat_complete", messages=messages)
+        for message in messages:
+            if message["role"] == "user" and self.has_image_in_content(
+                message["content"]
+            ):
+                model_id = GPT_4O
+                break
         return OPENAI_CLIENT.chat.completions.create(
             model=model_id,
             messages=messages,
         )
+
+    def has_image_in_content(self, content: list[dict[str, Any]]) -> bool:
+        for item in content:
+            if item["type"] == "image_url":
+                return True
+        return False
 
     def process_files(self, message: IMessage) -> list[dict]:
         """

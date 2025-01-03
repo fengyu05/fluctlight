@@ -10,3 +10,4 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 ADD fluctlight ./fluctlight
 ADD tests ./tests
 ADD setup.py ./setup.py
+ADD pytest.ini ./pytest.ini
