@@ -8,7 +8,7 @@ services:
     environment:
       - LLM_INTENT_MATCHING=true
       - TEST_MODE=true
-    command: pytest --verbose
+    command: pytest --verbose tests
 
   test-int:
     build:

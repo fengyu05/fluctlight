@@ -20,7 +20,7 @@ from fluctlight.agents.expert.task_workflow_config import (
 )
 from fluctlight.agents.expert.task_workflow_runner import WorkflowRunner
 from fluctlight.agents.message_intent_agent import MessageIntentAgent
-from fluctlight.data_model.slack.message_event import MessageEvent
+from fluctlight.data_model.interface import IMessage
 from fluctlight.intent.message_intent import MessageIntent
 
 logger = structlog.getLogger(__name__)
@@ -147,17 +147,19 @@ class TaskAgent(MessageIntentAgent):
         if not has_root:
             raise ValueError(f"No root found. {config_list}")
 
-    def retrieve_context(self, message_event: MessageEvent) -> TaskInvocationContext:
-        if message_event.message_id not in self._invocation_contexts:
-            self._invocation_contexts[message_event.message_id] = TaskInvocationContext(
+    def retrieve_context(self, message: IMessage) -> TaskInvocationContext:
+        if message.message_id not in self._invocation_contexts:
+            self._invocation_contexts[message.message_id] = TaskInvocationContext(
                 context=self._context.copy()
             )
-        return self._invocation_contexts[message_event.message_id]
+        return self._invocation_contexts[message.message_id]
 
-    def process_message(self, message_event: MessageEvent) -> list[str]:
-        ic = self.retrieve_context(message_event)
-        assert message_event.text, "message text is missing"
-        return self.run_task_with_ic(message_event.text, ic=ic)
+    def process_message(
+        self, message: IMessage, message_intent: MessageIntent
+    ) -> list[str]:
+        ic = self.retrieve_context(message)
+        assert message.text, "message text is missing"
+        return self.run_task_with_ic(message.text, ic=ic)
 
     def _process_workflow_upstream_input(
         self, workflow_runner: WorkflowRunner, message_text: str

@@ -1,7 +1,7 @@
 import os
 from typing import Any, Optional
 
-from fluctlight.constants import GPT_4O
+import fluctlight.constants as C
 
 
 def config_default(key: str, default_value: Optional[Any] = None) -> Any:
@@ -51,7 +51,8 @@ DISCORD_BOT_DEVELOPER_ROLE = config_default("DISCORD_BOT_DEVELOPER_ROLE", "devel
 OPENAI_API_KEY = config_default("OPENAI_API_KEY")
 
 # OPENAI GPT MODEL ID
-OPENAI_GPT_MODEL_ID = config_default("OPENAI_GPT_MODEL_ID", GPT_4O)
+OPENAI_GPT_MODEL_ID = config_default("OPENAI_GPT_MODEL_ID", C.GPT_4O)
+OPENAI_CHATBOT_MODEL_ID = config_default("OPENAI_CHATBOT_MODEL_ID", C.GPT_O1_MINI)
 
 # Whether to use char agent to match intent
 CHAR_AGENT_MATCHING = config_default_bool("CHAR_AGENT_MATCHING", True)

@@ -29,25 +29,25 @@ class CatalogManager(Singleton):
     def __init__(self):
         super().__init__()
 
-        self.db = get_chroma()
+        self.embedding_db = get_chroma()
         self.sql_db = next(get_db())
         self.sql_load_interval = 30
         self.sql_load_lock = rwlock.RWLockFair()
 
         if OVERWRITE_CHROMA:
             logger.info("Overwriting existing data in the chroma.")
-            self.db.delete_collection()
-            self.db = get_chroma()
+            self.embedding_db.delete_collection()
+            self.embedding_db = get_chroma()
 
         self.characters: dict[str, Character] = {}
         self.author_name_cache: dict[str, str] = {}
         self.load_characters_from_folder(OVERWRITE_CHROMA)
         if OVERWRITE_CHROMA:
             logger.info("Persisting data in the chroma.")
-            self.db.persist()
+            self.embedding_db.persist()
 
         logger.info(
-            f"Total document load: {self.db._client.get_collection(CHROMA_DB_COLLECTION_NAME).count()}"
+            f"Total document load: {self.embedding_db._client.get_collection(CHROMA_DB_COLLECTION_NAME).count()}"
         )
         self.run_load_sql_db_thread = True
         self.load_sql_db_thread = threading.Thread(target=self.load_sql_db_loop)
@@ -110,7 +110,7 @@ class CatalogManager(Singleton):
                 for d in documents
             ],
         )
-        self.db.add_documents(docs)
+        self.embedding_db.add_documents(docs)
 
     def load_characters_from_folder(self, overwrite: bool):
         """
