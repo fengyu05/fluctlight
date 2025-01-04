@@ -71,6 +71,7 @@ You may place it under `data/chars_catalog`. You can copy it from [here](./data/
 We also download the basic HTML of the Professor Oak anime wiki here, for adding knowledge for RAG-based conversation. More details will be explained in the advanced topic below.
 
 <https://bulbapedia.bulbagarden.net/wiki/Professor_Oak_(anime)>
+Use 'File' -> 'Save Page As' -> 'Webpage, Html Only' to download it.
 
 Below exlpain the folder structure
 ```plaintext
