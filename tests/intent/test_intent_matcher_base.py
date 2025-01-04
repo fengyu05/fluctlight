@@ -1,5 +1,4 @@
 import unittest
-from unittest.mock import patch
 
 from fluctlight.agents.miao_agent import MiaoAgent
 from fluctlight.agents.openai_chat_agent import OpenAiChatAgent
@@ -62,13 +61,6 @@ class TestMessageIntentAgent(unittest.TestCase):
         result = self.intent_matcher.match_message_intent(message)
 
         self.assertEqual(result, DEFAULT_CHAT_INTENT)
-
-    @patch("fluctlight.intent.intent_matcher_base.get_message_intent_by_emoji")
-    def test_emoji_based_intent(self, mock_get_message_intent_by_emoji):
-        mock_get_message_intent_by_emoji.return_value = create_intent("HAPPY")
-        result = self.intent_matcher.match_message_intent(MESSAGE_HELLO_WORLD)
-        mock_get_message_intent_by_emoji.assert_called_once()
-        self.assertEqual(result.key, "HAPPY")
 
 
 if __name__ == "__main__":

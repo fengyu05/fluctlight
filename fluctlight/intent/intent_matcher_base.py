@@ -11,7 +11,12 @@ from fluctlight.intent.message_intent import (
     get_message_intent_by_emoji,
 )
 from fluctlight.logger import get_logger
-from fluctlight.settings import CHAR_AGENT_MATCHING, LLM_INTENT_MATCHING
+from fluctlight.settings import (
+    INTENT_LLM_MATCHING,
+    INTENT_CHAR_MATCHING,
+    INTENT_EMOJI_MATCHING,
+    CHAR_AGENT_BIND,
+)
 
 logger = get_logger(__name__)
 
@@ -46,13 +51,15 @@ class IntentMatcher(ABC):
         if message.thread_message_id in self.intent_by_thread:
             return self.intent_by_thread[message.thread_message_id]
 
+        message_intent = UNKNOWN_INTENT
         if not message.text:
             message_intent = DEFAULT_CHAT_INTENT
         else:
-            message_intent = get_message_intent_by_emoji(message.text)
-            if CHAR_AGENT_MATCHING and message_intent.unknown:
+            if INTENT_EMOJI_MATCHING and not message_intent.unknown:
+                message_intent = get_message_intent_by_emoji(message.text)
+            if INTENT_CHAR_MATCHING and message_intent.unknown:
                 message_intent = self.get_char_agent_intent(message.text)
-            if LLM_INTENT_MATCHING and message_intent.unknown:
+            if INTENT_LLM_MATCHING and message_intent.unknown:
                 message_intent = self.parse_intent(message.text)
 
         if message_intent.unknown:
@@ -72,9 +79,22 @@ class IntentMatcher(ABC):
         return self._chars_map
 
     def get_char_agent_intent(self, text: str) -> MessageIntent:
+        if CHAR_AGENT_BIND:
+            return MessageIntent(key="CHAR", metadata={"char_id": CHAR_AGENT_BIND})
         emoji = get_leading_emoji(text)
         chars_map = self.get_char_emoji_map()
         if emoji in chars_map:
             return MessageIntent(key="CHAR", metadata={"char_id": chars_map[emoji]})
         else:
             return UNKNOWN_INTENT
+
+
+class IntentMatcherBase(IntentMatcher):
+    def __init__(
+        self,
+        agents: list[IntentAgent],
+    ) -> None:
+        super().__init__(agents)
+
+    def parse_intent(self, text: str) -> MessageIntent:
+        return DEFAULT_CHAT_INTENT

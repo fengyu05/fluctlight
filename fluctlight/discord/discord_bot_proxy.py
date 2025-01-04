@@ -13,10 +13,10 @@ from fluctlight.discord.chat import DiscordChat
 from fluctlight.discord.guild import DiscordGuild
 from fluctlight.discord.reaction import DiscordReaction
 from fluctlight.intent.intent_matcher_base import IntentMatcher
-from fluctlight.intent.rag_intent_matcher import RagIntentMatcher
 from fluctlight.logger import get_logger
-from fluctlight.settings import DISCORD_BOT_DEVELOPER_ROLE
+from fluctlight.settings import DISCORD_BOT_ACCESS_MODE
 from fluctlight.utt.singleton import Singleton
+from fluctlight.intent import get_default_intent_matcher
 
 logger = get_logger(__name__)
 
@@ -36,7 +36,7 @@ class DiscordBotProxy(BotProxy, DiscordChat, DiscordReaction, DiscordGuild, Sing
             create_default_character_agent(),
             self.chat_agent,
         ]
-        self.intent_matcher = RagIntentMatcher(self.agents)
+        self.intent_matcher = get_default_intent_matcher(self.agents)
 
     def set_bot_client(self, client: DiscordBotClient) -> None:
         self.client = client
@@ -48,36 +48,45 @@ class DiscordBotProxy(BotProxy, DiscordChat, DiscordReaction, DiscordGuild, Sing
             logger.info("Ingore !react message", message=message)
             return False
 
-        # Reply to direct messages
-        if self._is_trust_dm(message) or self._bot_has_reply(message):
-            return True
+        # In TextChannel, only reply when mentioned
         if isinstance(
             message.channel, discord.TextChannel
-        ) and self.bot_user.mentioned_in(message):
-            return True
-
-        return False
-
-    def _is_trust_dm(self, message: Message) -> bool:
-        """Trust DM is when the DM author is with developer role of Fluctlight."""
-        if not isinstance(message.channel, discord.DMChannel):
+        ) and not self.bot_user.mentioned_in(message):
             return False
+        # In Thread, only reply when the thread own by the bot
+        if (
+            isinstance(message.channel, discord.Thread)
+            and not message.channel.owner_id == self.bot_user.id
+        ):
+            return False
+
+        # Check access mode
+        return self._bot_access_accept(message, access_mode=DISCORD_BOT_ACCESS_MODE)
+
+    def _bot_access_accept(self, message: Message, access_mode: str) -> bool:
+        if access_mode == "all":
+            return True
 
         member = self.get_message_author_member(message)
         if not member:
             return False
+
+        if access_mode == "member":
+            return True
+
         # Check if any of the author's roles match the developer role
         for role in member.roles:
-            if role.name == DISCORD_BOT_DEVELOPER_ROLE:
+            if role.name in self.parse_access_role(access_mode):
                 return True
         return False
 
-    def _bot_has_reply(self, message: Message) -> bool:
-        """The bot has reply to the message"""
-        return (
-            isinstance(message.channel, discord.Thread)
-            and message.channel.owner_id == self.bot_user.id
-        )
+    def parse_access_role(self, access_mode: str) -> list[str]:
+        # Split the access mode on ':' and take the second part
+        roles_part = access_mode.split(":", 1)[1]
+        # Split the roles part on ',' and strip whitespace from each role name
+        roles = [role.strip() for role in roles_part.split(",")]
+        # Filter out any empty role names
+        return [role for role in roles if role]
 
     async def on_message(self, message: Message) -> None:
         logger.debug("on message", message=message)
