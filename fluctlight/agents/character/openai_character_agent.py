@@ -68,7 +68,9 @@ class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
     ) -> list[str]:
         char_id = message_intent.get_metadata("char_id")
         character = self.catalog_manager.get_character(character_id=char_id)
+
         assert character, f"Character doesn't exisit, char_id={char_id}"
+        logger.info("talking to character", char_id=char_id, char_name=character.name)
         output = []
         if character.task_config:
             # for DEBUG

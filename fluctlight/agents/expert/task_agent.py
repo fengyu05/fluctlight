@@ -19,7 +19,7 @@ from fluctlight.agents.expert.task_workflow_config import (
 )
 from fluctlight.agents.expert.task_workflow_runner import WorkflowRunner
 from fluctlight.agents.message_intent_agent import MessageIntentAgent
-from fluctlight.data_model.slack.message_event import MessageEvent
+from fluctlight.data_model.interface import IMessage
 from fluctlight.intent.message_intent import MessageIntent
 from fluctlight.logger import get_logger
 

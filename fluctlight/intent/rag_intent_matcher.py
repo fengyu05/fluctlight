@@ -17,6 +17,7 @@ from fluctlight.intent.intent_matcher_base import IntentMatcher
 from fluctlight.intent.message_intent import MessageIntent, create_intent
 from fluctlight.logger import get_logger
 from fluctlight.utt.prompt_utils import construct_system_prompt
+from fluctlight.settings import FIREWORKS_API_KEY
 
 logger = get_logger(__name__)
 
@@ -73,7 +74,9 @@ class RagIntentMatcher(IntentMatcher):
         super().__init__(
             agents=agents,
         )
-        self.llm = ChatFireworks(model=model_id, max_tokens=max_tokens)
+        self.llm = ChatFireworks(
+            model=model_id, max_tokens=max_tokens, api_key=FIREWORKS_API_KEY
+        )
         self.match_intent_chain = (
             construct_system_prompt(
                 prompt=_MATCH_PROMPT,

@@ -51,7 +51,7 @@ class TestTaskAgent(unittest.TestCase):
                 task_graph=self.task_graph,
             )
 
-        agent.process_message(message_event=self.message)
+        agent.process_message(message=self.message, message_intent=self.intent)
         task1.process.assert_called_once_with(message=self.intake_message)
         task2.process.assert_called_once_with(
             message=self.intake_message, poem_translation="output_task1"
@@ -84,7 +84,7 @@ class TestTaskAgent(unittest.TestCase):
                 task_graph=self.task_graph,
             )
 
-        agent.process_message(message_event=self.message)
+        agent.process_message(message=self.message, message_intent=self.intent)
 
         # First time, task1 called, stuck_task called and break
         task1.process.assert_called_once_with(message=self.intake_message)
@@ -99,7 +99,7 @@ class TestTaskAgent(unittest.TestCase):
         task2.process = MagicMock(return_value="output_task2")
         stuck_task.process = MagicMock(return_value="pass")  # Change to pass
 
-        agent.process_message(message_event=self.message)
+        agent.process_message(message=self.message, message_intent=self.intent)
         task1.process.assert_not_called()
         stuck_task.process.assert_called_once_with(
             message=self.intake_message,
@@ -133,7 +133,7 @@ class TestTaskAgent(unittest.TestCase):
                 },
             )
 
-        agent.process_message(message_event=self.message)
+        agent.process_message(message=self.message, message_intent=self.intent)
         task1.process.assert_called_once_with(
             message=self.intake_message,
             a="a",

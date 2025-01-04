@@ -1,31 +1,14 @@
-import os
-from typing import Any, Optional
-
-from fluctlight.constants import GPT_4O
-
-
-def config_default(key: str, default_value: Optional[Any] = None) -> Any:
-    return os.environ.get(key, default_value)
-
-
-def config_default_float(key: str, default_value: Any = 0.0) -> float:
-    return float(os.environ.get(key, default_value))
-
-
-def config_default_int(key: str, default_value: Any = 0) -> float:
-    return int(os.environ.get(key, default_value))
-
-
-_TRUTHY_VALUES = {"true", "1", "yes", "t", "y"}
-
-
-def config_default_bool(key: str, default_value: bool = False) -> bool:
-    return str(os.environ.get(key, default_value)).lower() in _TRUTHY_VALUES
-
+from fluctlight.utt.config import (
+    config_default,
+    config_default_bool,
+    config_default_int,
+    config_default_float,
+)
+import fluctlight.constants as C
 
 # App config
 ENV = config_default("ENV", "dev")
-APP_NAME = config_default("APP_NAME", "botchan")
+APP_NAME = config_default("APP_NAME", "Fluctlight")
 LOG_LEVEL = config_default("LOG_LEVEL", "INFO")
 DEBUG_MODE = config_default_bool("DEBUG_MODE", False)  # For debug print
 TEST_MODE = config_default_bool("TEST_MODE", False)  # For unit test
@@ -45,19 +28,35 @@ DISCORD_BOT_TOKEN = config_default("DISCORD_BOT_TOKEN")
 
 DISCORD_BOT_GUILD_ID = config_default_int("DISCORD_BOT_GUILD_ID")
 
-DISCORD_BOT_DEVELOPER_ROLE = config_default("DISCORD_BOT_DEVELOPER_ROLE", "developer")
+
+def validate_discord_bot_access_mode(value: str) -> bool:
+    if value in ["all", "member"]:
+        return True
+    return value.startswith("role:")
+
+
+DISCORD_BOT_ACCESS_MODE = config_default(
+    "DISCORD_BOT_ACCESS_MODE", "all", validator=validate_discord_bot_access_mode
+)
+
 
 # OPENAI API KEY
 OPENAI_API_KEY = config_default("OPENAI_API_KEY")
 
 # OPENAI GPT MODEL ID
-OPENAI_GPT_MODEL_ID = config_default("OPENAI_GPT_MODEL_ID", GPT_4O)
+OPENAI_GPT_MODEL_ID = config_default("OPENAI_GPT_MODEL_ID", C.GPT_4O)
+OPENAI_CHATBOT_MODEL_ID = config_default("OPENAI_CHATBOT_MODEL_ID", C.GPT_O1_MINI)
 
-# Whether to use char agent to match intent
-CHAR_AGENT_MATCHING = config_default_bool("CHAR_AGENT_MATCHING", True)
+# FIREWORKS API KEY, alt to OpenAI
+FIREWORKS_API_KEY = config_default("FIREWORKS_API_KEY")
 
-# Whether to use LLM to match message intent
-LLM_INTENT_MATCHING = config_default_bool("LLM_INTENT_MATCHING", False)
+# Intent matching config
+INTENT_CHAR_MATCHING = config_default_bool("INTENT_CHAR_MATCHING", False)
+INTENT_LLM_MATCHING = config_default_bool("INTENT_LLM_MATCHING", False)
+INTENT_EMOJI_MATCHING = config_default_bool("INTENT_EMOJI_MATCHING", False)
+
+# For INTENT_CHAR_MATCHING
+CHAR_AGENT_BIND = config_default("CHAR_AGENT_BIND")
 
 # Whether to use SQL char DB
 USE_SQL_CHAR_DB = config_default_bool("USE_SQL_CHAR_DB", False)

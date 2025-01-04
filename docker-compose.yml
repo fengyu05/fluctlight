@@ -8,12 +8,12 @@ services:
     environment:
       - LOG_LEVEL=info
       - BOT_CLIENT=slack
-      #- OVERWRITE_CHROMA=true
     volumes:
       - './data/chars_catalog:/app_data/chars_catalog'
       - './data/chroma.db:/app_data/chroma.db'
     ports:
       - 3000:3000
+
 
   server-discord:
     build:

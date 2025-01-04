@@ -1,0 +1,81 @@
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discord-server
+  template:
+    metadata:
+      labels:
+        app: discord-server
+    spec:
+      containers:
+      - name: discord-server
+        image: your-docker-repo/your-image:tag # Replace with your Docker image path and tag
+        env:
+        - name: LOG_LEVEL
+          value: "info"
+        - name: BOT_CLIENT
+          value: "discord"
+        envFrom:
+        - configMapRef:
+            name: discord-env-config # Must be created to include environment variables from 'env.discord_tutorial'
+        volumeMounts:
+        - mountPath: /app_data/chars_catalog
+          name: chars-catalog-volume
+        - mountPath: /app_data/chroma.db
+          name: chroma-db-volume
+        ports:
+        - containerPort: 3000
+      volumes:
+      - name: chars-catalog-volume
+        hostPath:
+          path: /host/path/to/chars_catalog # Replace with the actual host path
+      - name: chroma-db-volume
+        hostPath:
+          path: /host/path/to/chroma.db # Replace with the actual host path
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: discord-env-config
+data:
+  # OpenAI API Key
+  OPENAI_API_KEY: "!!!mask!!!"  # Make sure to replace with your actual key
+
+  # Bot Client type
+  BOT_CLIENT: "DISCORD"
+
+  # Discord bot token
+  DISCORD_BOT_TOKEN: "!!!mask!!!"  # Replace with your actual Discord bot token
+
+  # Enable character agent and bind "prof_oak" to it
+  INTENT_CHAR_MATCHING: "true"
+  CHAR_AGENT_BIND: "prof_oak"
+
+  # Guild Restriction
+  DISCORD_BOT_ACCESS_MODE: "all"  # ["all", "member", or "role_xyz"]
+  # Optionally restrict the bot to a specific guild (uncomment and set ID)
+  # DISCORD_BOT_GUILD_ID: !!!mask!!!
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: discord-server-service
+spec:
+  selector:
+    app: discord-server
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: NodePort
