@@ -30,52 +30,50 @@ Transform your interaction experiences with Fluctlight, where innovation meets s
 
 ## Setup
 
-Rename env.template to .env and fill in the required APIKEY there.
-
-Make that, simple run command `docker compose up app`
-
-## Requirements env.
-We use [Docker](https://www.docker.com) to run the application.
-
-We recommand asdf to manage your local dev env if you're on a MacOS.
+1. **Rename** `env.template` to `.env`.
+2. **Fill in the required** `APIKEY` there.
+3. **Run** `make` for a simple setup.
 
 ## Tooling
 
-Command make will list all the tasks.
+Running the `make` command will list all available tasks:
 
-```
+```shell
+❯ make
 ===== All tasks =====
-app                            start app server
-app-debug                      start app server with debug mode
-test                           Test.PHONY:
+slack-server                   start slack server
+discord-server                 start discord server
+debug-server                   start app server with debug mode
+api-server                     start app server
+test                           Test
+test-int                       Integration test
 docker-compose-build           Build the app
 docker-compose-up              Run app with rebuild
 docker-compose-bash            Connect to a bash within the docker image
 docker-test                    Run unit test
-docker-test-int                Run intergation test
+docker-test-int                Run integration test
 requirements.txt               Export requirements.txt from pyproject.toml
 requirements-dev.txt           Export requirements-dev.txt from pyproject.toml
+alembic-init                   initial alembic db env
+alembic-revision               Create a new alembic revision file[within a docker app env], e.g make alembic-revision REV_LOG="add user table" DB_APP=app
+alembic-upgrade                Apply alembic revision, e.g make alembic-upgrade REV=xyz DB_APP=app
 ```
 
 # Deployment
 
-Botchan is fully functional and running on your local dev machine or laptop.
-If you are looking at optional to turn it into a 24/7 online bot here are some suggestions.
+Botchan can be run locally on your development machine or laptop. For a 24/7 online deployment option:
 
-  - Deploying the application in a cloud Kubernetes environment is recommended since it is already containerized.
-  - Deploy on serverless env like Heroku.
-
-
-
+- Consider deploying the application in a cloud Kubernetes environment, as it is already containerized.
 
 ## Discord Bot Setup
 
-[Discord Bot Setup Guide](https://discordpy.readthedocs.io/en/stable/discord.html)
+Refer to the [Discord Bot Setup Tutorial](./tutorial/create_a_character_on_discord.md).
 
 ## Slack Bot Setup
 
-[Slack Bot Setup Tutorial](https://api.slack.com/tutorials/tracks/create-bot-to-welcome-users)
+Follow the [Slack Bot Setup Tutorial](https://api.slack.com/tutorials/tracks/create-bot-to-welcome-users).
 
-## Security and privacy reminder.
-- It is essential to be aware that if you need to log chat messages, the author suggests only doing so when the debug flag is on.
-- The repository is not designed to be secure for production use, so use it at your own risk.
+## Security and Privacy Reminder
+
+- Log chat messages only when the debug flag is enabled.
+- The repository is not designed for production use, so exercise caution and use at your own risk.
