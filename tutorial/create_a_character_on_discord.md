@@ -2,20 +2,20 @@
 
 Follow these steps to create a Discord bot and get your `DISCORD_BOT_TOKEN`:
 
-## 1. Create a Discord Application
+## a. Create a Discord Application
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
 2. Click on **"New Application"**.
 3. Enter a name for your application and click **"Create"**.
 
-## 2. Create a Bot User
+## b. Create a Bot User
 
 1. In your application, navigate to the **"Bot"** tab on the left sidebar.
 2. Click **"Add Bot"** and confirm by clicking **"Yes, do it!"**.
 
    ![Creating Bot](img/oak_setup_1.png)
 
-## 3. Get the Bot Token
+## c. Get the Bot Token
 
 - Under the **"Bot"** tab, you will see a section called **"TOKEN"**.
 - Click **"Copy"** to copy your bot token. This token is used to authenticate your bot.
@@ -28,7 +28,7 @@ Follow these steps to create a Discord bot and get your `DISCORD_BOT_TOKEN`:
     ```
 
 
-## 4. Invite Your Bot to a Server
+## d. Invite Your Bot to a Server
 
 1. Go to the **"OAuth2"** tab on the left sidebar.
 2. Under **"OAuth2 URL Generator"**, select the **"bot"** scope.
@@ -48,7 +48,7 @@ Follow these steps to create a Discord bot and get your `DISCORD_BOT_TOKEN`:
 
    ![Invite Bot](img/oak_setup_2.png)
 
-## 5. Store the Bot Token
+## e. Store the Bot Token
 
 Store the copied bot token in a secure place, such as an environment variable in your `.env` file. Example `.env` entry:
 
