@@ -1,3 +1,4 @@
+from typing import Any
 from pydantic import BaseModel
 
 
@@ -15,7 +16,7 @@ class Character(BaseModel):
     tts: str | None = None
     order: int = 10**9  # display order on the website
     data: dict | None = None
-    task_config: str | None = None
+    task_config: dict[str, Any] | None = None
 
 
 class CharacterRequest(BaseModel):
