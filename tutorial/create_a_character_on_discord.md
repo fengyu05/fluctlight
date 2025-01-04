@@ -68,25 +68,24 @@ OPENAI_API_KEY=your-api-key-here
 
 # Step 3: Prepare the Documentation for Your Character Bot
 
-You may place it under `data/chars_catalog`. You can copy it from here and move it to root folder of fluctlight root.
+You may place it under `data/chars_catalog`. You can copy it from [here](./data/prof_oak/) and move it to root folder of fluctlight root.
 
+We also download the basic HTML of the Professor Oak anime wiki here, for adding knowledge for RAG-based conversation. More details will be explained in the advanced topic below.
+
+<https://bulbapedia.bulbagarden.net/wiki/Professor_Oak_(anime)>
+
+Below exlpain the folder structure
 ```plaintext
 ❯ tree data/chars_catalog/prof_oak
 data/chars_catalog/prof_oak
 ├── config.yaml
 ├── data
 │   └── Professor Oak (anime) - Bulbapedia, the community-driven Pokémon encyclopedia.html
-└── prof_oak.png
 ```
-
-We also download the basic HTML of the Professor Oak anime wiki here, for adding knowledge for RAG-based conversation. More details will be explained in the advanced topic below.
-
-<https://bulbapedia.bulbagarden.net/wiki/Professor_Oak_(anime)>
-
 
 # Step 4: Configure Your App's .env File
 
-The minimal configuration you will need is the [here](./env.discord_tutorial.yaml). Please copy it to the github root foler as `.env`.
+The minimal configuration you will need is the [here](./env.discord_tutorial). Please copy it to the github root foler as `.env`.
 
 ```yaml
 # OpenAI API Key
