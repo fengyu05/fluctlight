@@ -66,14 +66,16 @@ OPENAI_API_KEY=your-api-key-here
 
 # Step 3: Prepare the Documentation for Your Character Bot
 
-You may place it under `data/chars_catalog`. You can copy it from [here](./data/prof_oak/) and move it to root folder of fluctlight root.
+You may place the configuration file under `data/chars_catalog`. Copy it from [this location](./chars_catalog/prof_oak/config.yaml) and move it to the root folder of the fluctlight project.
 
-We also download the basic HTML of the Professor Oak anime wiki here, for adding knowledge for RAG-based conversation. More details will be explained in the advanced topic below.
+Additionally, download the basic HTML of Professor Oak's anime wiki for RAG-based conversation. The process and advanced details are provided below.
 
-<https://bulbapedia.bulbagarden.net/wiki/Professor_Oak_(anime)>
-Use 'File' -> 'Save Page As' -> 'Webpage, Html Only' to download it.
+1. Visit [Professor Oak's Wiki Page](https://bulbapedia.bulbagarden.net/wiki/Professor_Oak_(anime)).
+2. Use the browser option:
+   - **File** -> **Save Page As** -> **Webpage, HTML Only**
 
-Below exlpain the folder structure
+Below is the expected final folder structure:
+
 ```plaintext
 ❯ tree data/chars_catalog/prof_oak
 data/chars_catalog/prof_oak
