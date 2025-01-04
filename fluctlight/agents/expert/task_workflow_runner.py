@@ -8,7 +8,9 @@ from fluctlight.agents.expert.task_workflow_config import (
     WorkflowRunningState,
     has_internal_upstreams,
 )
+from fluctlight.logger import get_logger
 
+logger = get_logger(__name__)
 
 class WorkflowRunner:
     def __init__(
@@ -64,6 +66,10 @@ class WorkflowRunner:
 
     def process_message(self, *args: Any, **kwargs: Any) -> Tuple[str, Any]:
         cur_node = self.get_current_node()
+        if cur_node == "END":
+            self._state["current_node"] = self._config.begin
+            cur_node = self._config.begin
+
         events = self._graph.stream(self._state, stream_mode="values")
         for event in events:
             last_state = event
@@ -71,6 +77,7 @@ class WorkflowRunner:
         output_value = last_state["running_state"][cur_node]
         output_state: WorkflowNodeOutput = last_state["output_state"][cur_node]
         result = (cur_node, output_value)
+        logger.info("CUR_NODE: " + cur_node + " output_value: " + str(output_value) + " result: " + str(result))
 
         # update state
         self._state["running_state"][cur_node] = output_value
@@ -81,15 +88,19 @@ class WorkflowRunner:
             or output_state.output_type == "LOOP_MESSAGE_TRUE"
         ):
             # move to next step
+            logger.info("Move to next step, cur: " + cur_node)
             if cur_node == self._config.end:
                 self._state["current_node"] = "END"
+                logger.info("Next is END")
             else:
                 downstreams = self.get_node_downstreams(cur_node)
                 next_downstream = downstreams[0]
                 self._state["current_node"] = next_downstream
+                logger.info("Next is " + next_downstream)
         elif output_state.output_type == "LOOP_MESSAGE_FALSE":
             # output loop message
-            result = (cur_node, output_state.loop_message)
+            # result = (cur_node, output_state.loop_message)
+            logger.info("CUR_NODE: " + cur_node + " loop_message: " + str(result))
         else:
             raise ValueError(f"Unknow output type. {output_state}")
 

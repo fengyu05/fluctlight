@@ -2,7 +2,6 @@ import time
 from dataclasses import dataclass
 from typing import Any, Optional
 
-import structlog
 from jinja2 import Environment, meta
 
 from fluctlight.agents.expert.data_model import (
@@ -22,8 +21,9 @@ from fluctlight.agents.expert.task_workflow_runner import WorkflowRunner
 from fluctlight.agents.message_intent_agent import MessageIntentAgent
 from fluctlight.data_model.slack.message_event import MessageEvent
 from fluctlight.intent.message_intent import MessageIntent
+from fluctlight.logger import get_logger
 
-logger = structlog.getLogger(__name__)
+logger = get_logger(__name__)
 
 EMPTY_LOOP_MESSAGE = "Cannot proceed with the request, please try again :bow:"
 
@@ -43,6 +43,7 @@ class TaskAgent(MessageIntentAgent):
         task_graph: list[TaskConfig],
         context: Optional[dict[str, Any]] = None,
         workflow_runner_config: Optional[WorkflowRunnerConfig] = None,
+        contexts: Optional[dict[str, TaskInvocationContext]] = None,
     ) -> None:
         super().__init__(intent=intent)
         self._name = name
@@ -55,7 +56,7 @@ class TaskAgent(MessageIntentAgent):
             self._workflow_runner_config = workflow_runner_config
         else:
             self._tasks = self.build_task_graph(task_graph)
-        self._invocation_contexts = {}
+        self._invocation_contexts: dict[str, TaskInvocationContext] = {} if contexts is None else contexts
 
     def build_task_graph(self, task_graph: list[TaskConfig]) -> list[TaskNode]:
         """
@@ -148,16 +149,45 @@ class TaskAgent(MessageIntentAgent):
             raise ValueError(f"No root found. {config_list}")
 
     def retrieve_context(self, message_event: MessageEvent) -> TaskInvocationContext:
-        if message_event.message_id not in self._invocation_contexts:
-            self._invocation_contexts[message_event.message_id] = TaskInvocationContext(
+        logger.info("message_event: " + str(message_event) + " contexts: " + str(self._invocation_contexts))
+        if message_event.thread_message_id not in self._invocation_contexts:
+            self._invocation_contexts[message_event.thread_message_id] = TaskInvocationContext(
                 context=self._context.copy()
             )
-        return self._invocation_contexts[message_event.message_id]
+            logger.info("context not exist, create one !!!!!!!!") 
+        return self._invocation_contexts[message_event.thread_message_id]
 
     def process_message(self, message_event: MessageEvent) -> list[str]:
         ic = self.retrieve_context(message_event)
         assert message_event.text, "message text is missing"
         return self.run_task_with_ic(message_event.text, ic=ic)
+    
+    def process_message2(self, message_event: MessageEvent) -> Any:
+        logger.info(message_event)
+        ic = self.retrieve_context(message_event)
+        assert message_event.text, "message text is missing"
+        if "workflow_session" in ic.context:
+            workflow_session: WorkflowRunningState = ic.context["workflow_session"]
+            logger.info("recover session " + str(workflow_session))
+        else:
+            workflow_session: WorkflowRunningState = WorkflowRunningState(
+                session_id=str(int(time.time())),
+                current_node=self._workflow_runner_config.config.begin,
+                running_state=ic.context.copy(),
+                output_state={},
+            )
+        # TODO: 
+        if INTERNAL_UPSTREAM_HISTORY_MESSAGES in self._context:
+            workflow_session["running_state"][
+                INTERNAL_UPSTREAM_HISTORY_MESSAGES
+            ] = self._context[INTERNAL_UPSTREAM_HISTORY_MESSAGES]
+            logger.info("load historys: " + str(self._context[INTERNAL_UPSTREAM_HISTORY_MESSAGES]))
+
+        response = self.run_task_with_workflow_session(
+            message_event.text, ic, self._workflow_runner_config, workflow_session
+        )
+        logger.info("response " + str(response))
+        return response 
 
     def _process_workflow_upstream_input(
         self, workflow_runner: WorkflowRunner, message_text: str
@@ -183,8 +213,8 @@ class TaskAgent(MessageIntentAgent):
         ic: TaskInvocationContext,
         workflow_runner_config: WorkflowRunnerConfig,
         workflow_session: WorkflowRunningState,
-    ) -> list[str]:
-        responses: list[str] = []
+    ) -> Any:
+        # responses: Any = None
 
         # build or restore worflow runner
         workflow_runner = WorkflowRunner(
@@ -193,14 +223,14 @@ class TaskAgent(MessageIntentAgent):
         )
 
         cur_node = workflow_runner.get_current_node()
-        print("=======", cur_node, "=======")
-        assistant_response = ""
+        assistant_response: Any = None
         while cur_node != "END":
             # handle workflow upstream input
             self._process_workflow_upstream_input(workflow_runner, message_text)
 
             # workflow process
             task_name, assistant_response = workflow_runner.process_message()
+            logger.info("task_name: " + task_name + " response: " + str(assistant_response))
 
             # if current unhandled node have input message, break to obtain new input message
             # otherwise continue to handle next node
@@ -209,11 +239,11 @@ class TaskAgent(MessageIntentAgent):
                 break
 
         # update ic context
-        responses.append(str(assistant_response))
-        workflow_runner.append_history_message(message_text, str(assistant_response))
+        # responses.append(assistant_response))
+        # workflow_runner.append_history_message(message_text, str(assistant_response))
         ic.context.update({"workflow_session": workflow_runner.get_session_state()})
 
-        return responses
+        return assistant_response
 
     def run_task_with_ic(
         self, message_text: str, ic: TaskInvocationContext

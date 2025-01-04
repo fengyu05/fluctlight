@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Any, List, cast
 
 from langchain.callbacks.base import AsyncCallbackHandler
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -6,6 +7,7 @@ from langchain_community.chat_models import ChatOpenAI
 
 from fluctlight.agent_catalog.catalog_manager import get_catalog_manager
 from fluctlight.agents.character.base import CharacterAgent
+from fluctlight.agents.expert.data_model import IntakeHistoryMessage
 from fluctlight.agents.message_intent_agent import MessageIntentAgent
 from fluctlight.data_model.interface import IMessage
 from fluctlight.data_model.interface.character import Character
@@ -13,7 +15,7 @@ from fluctlight.embedding.chroma import get_chroma
 from fluctlight.intent.message_intent import MessageIntent
 from fluctlight.logger import get_logger
 from fluctlight.utt.emoji import strip_leading_emoji
-from fluctlight.agents.expert.task_agent import TaskAgent
+from fluctlight.agents.expert.task_agent import TaskAgent, TaskInvocationContext
 
 logger = get_logger(__name__)
 
@@ -47,6 +49,7 @@ class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
         self.db = get_chroma()
         self.catalog_manager = get_catalog_manager()
         self.history_buffer = defaultdict(list)
+        self._invocation_contexts: dict[str, TaskInvocationContext] = {}
 
     @property
     def name(self) -> str:
@@ -68,10 +71,76 @@ class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
         assert character, f"Character doesn't exisit, char_id={char_id}"
         output = []
         if character.task_config:
-            output.append("I'm a task agent")
-            response_text = self.task_agent_dispatch(
-                task_agent=None,  # TODO: construct a task agent from task_config
+            # for DEBUG
+            # output.append("I'm a task agent")
+            # output.append(str(character.task_config))
+            # 
+            from fluctlight.agents.expert.task_workflow_config import TaskWorkflowConfig, WorkflowRunnerConfig
+            from fluctlight.agents.expert.task_workflow import build_workflow_graph
+            from fluctlight.intent.message_intent import create_intent
+            
+            workflow_config = TaskWorkflowConfig.load_from_config(character.task_config["workflow"])
+            msgs: list[str] = []
+            for msg in self.get_history(thread_id=message.thread_message_id, character=character):
+                logger.info("=============================================== history: " + str(msg))
+                msgs.append(str(msg))
+            workflow_config.context["__HISTORY_MESSAGES"] = IntakeHistoryMessage(messages=msgs)
+
+            agent = TaskAgent(
+                name=character.task_config["name"],
+                description=character.task_config["description"],
+                intent=create_intent(character.task_config["intent_key"]),
+                context=workflow_config.context,
+                workflow_runner_config=WorkflowRunnerConfig(
+                    config=workflow_config,
+                    state_graph=build_workflow_graph(workflow_config),
+                ),
+                task_graph=[],
+                contexts=self._invocation_contexts
             )
+            response = self.task_agent_dispatch(task_agent=agent, message=message)
+            
+            from fluctlight.agents.expert.shopping_assist import ProductMatch, Order, create_inventory
+            if isinstance(response, ProductMatch):
+                if response.match:
+                    response_text = self.chat(
+                        history=self.get_history(
+                            thread_id=message.thread_message_id, character=character
+                        ),
+                        user_input="""Based on the matched product information, ask the user if they would like to make a purchase.
+ProductMatch: 
+""" + cast(ProductMatch, response).model_dump_json(),
+                        character=character,
+                    )
+                else:
+                    response_text = self.chat(
+                        history=self.get_history(
+                            thread_id=message.thread_message_id, character=character
+                        ),
+                        user_input="""Based on the product list in stock, guide the user to purchase the items in the list.
+Inventory:
+""" + create_inventory().model_dump_json(),
+                        character=character,
+                    )
+            elif isinstance(response, Order):
+                response_text = self.chat(
+                        history=self.get_history(
+                            thread_id=message.thread_message_id, character=character
+                        ),
+                        user_input="""Based on the order information, inform the user that the order has been processed.
+Order:
+""" + cast(Order, response).model_dump_json(),
+                        character=character,
+                    )
+            else:
+                response_text = self.chat(
+                    history=self.get_history(
+                        thread_id=message.thread_message_id, character=character
+                    ),
+                    user_input=strip_leading_emoji(message.text),
+                    character=character,
+                )
+            output.append(response_text)
         else:
             response_text = self.chat(
                 history=self.get_history(
@@ -86,8 +155,10 @@ class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
     def task_agent_dispatch(
         self,
         task_agent: TaskAgent,  # pylint: disable=W0613:unused-argument
-    ) -> str:
-        return "Not implement yet"
+        message: IMessage,
+    ) -> Any:
+        response = task_agent.process_message2(message_event=message)
+        return response
 
     def get_history(self, thread_id: str, character: Character) -> list[BaseMessage]:
         if thread_id not in self.history_buffer:
