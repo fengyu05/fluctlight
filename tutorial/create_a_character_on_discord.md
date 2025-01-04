@@ -17,11 +17,9 @@ Follow these steps to create a Discord bot and get your `DISCORD_BOT_TOKEN`:
 
 ## c. Get the Bot Token
 
-- Under the **"Bot"** tab, you will see a section called **"TOKEN"**.
-- Click **"Copy"** to copy your bot token. This token is used to authenticate your bot.
-
-
-- Make sure you enable this two checkbox in
+1. Under the **"Bot"** tab, you will see a section called **"TOKEN"**.
+2. Click **"Copy"** to copy your bot token. This token is used to authenticate your bot.
+3. Make sure you enable these two checkbox in privilege section.
     ```markdown
     **Server Members Intent**
     **Message Content Intent**
