@@ -51,4 +51,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 exclude = [
      "alembic/versions",
+     "tutorial",
+     "design"
 ]

@@ -7,13 +7,13 @@ from fluctlight.agents.openai_chat_agent import OpenAiChatAgent
 from fluctlight.core.bot_proxy import BotProxy
 from fluctlight.data_model.slack import MessageEvent
 from fluctlight.intent.intent_matcher_base import IntentMatcher
-from fluctlight.intent.rag_intent_matcher import RagIntentMatcher
 from fluctlight.logger import get_logger
 from fluctlight.slack.adaper import Adapter
 from fluctlight.slack.chat import SlackChat
 from fluctlight.slack.messages_fetcher import MessagesFetcher
 from fluctlight.slack.reaction import SlackReaction
 from fluctlight.utt.singleton import Singleton
+from fluctlight.intent import get_default_intent_matcher
 
 logger = get_logger(__name__)
 
@@ -30,20 +30,12 @@ class SlackBotProxy(BotProxy, MessagesFetcher, SlackChat, SlackReaction, Singlet
         self.bot_user_id = self.get_bot_user_id()
         self.chat_agent = OpenAiChatAgent(transcribe_slack_audio=self.transcribe_audio)
         self.adapter = Adapter()
-        from fluctlight.agents.expert.poem_translate import (
-            create_poems_translation_task_agent,
-        )
-        from fluctlight.agents.expert.shopping_assist import (
-            create_shopping_assisist_task_agent,
-        )
 
         self.agents = [
-            create_poems_translation_task_agent(),
-            create_shopping_assisist_task_agent(),
             create_default_character_agent(),
             self.chat_agent,
         ]
-        self.intent_matcher = RagIntentMatcher(self.agents)
+        self.intent_matcher = get_default_intent_matcher(self.agents)
 
     def _should_reply(self, message_event: MessageEvent) -> bool:
         return message_event.channel_type == "im" or message_event.is_user_mentioned(

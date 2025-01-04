@@ -1,99 +1,79 @@
-# pylint: disable=redefined-outer-name,protected-access
-from unittest.mock import Mock, patch
-
-import pytest
-from discord import DMChannel, Message, TextChannel, Thread
-
-from fluctlight.discord.bot_client import DiscordBotClient
+# pylint: disable=protected-access
+import unittest
+from unittest.mock import MagicMock
+from discord.message import Message
+from discord.user import User
 from fluctlight.discord.discord_bot_proxy import DiscordBotProxy
 
-DISCORD_BOT_DEVELOPER_ROLE = "developer"
+
+class TestDiscordBotProxy(unittest.TestCase):
+    def setUp(self):
+        self.bot_proxy = DiscordBotProxy()
+        self.bot_proxy.client = MagicMock()
+        self.bot_proxy.client.user = MagicMock(spec=User)
+        self.bot_proxy.client.user.id = 12345
+
+    def test_should_reply_to_direct_message(self):
+        message = MagicMock(spec=Message)
+        message.author = MagicMock(spec=User)
+        message.author.id = 67890
+        message.channel = MagicMock()
+        message.channel.__class__.__name__ = "DMChannel"
+        message.content = "Hello"
+
+        self.bot_proxy._bot_access_accept = MagicMock(return_value=True)
+        self.bot_proxy._bot_has_reply = MagicMock(return_value=False)
+
+        self.assertTrue(self.bot_proxy._should_reply(message))
+
+    def test_should_not_reply_to_self_message(self):
+        message = MagicMock(spec=Message)
+        message.author = self.bot_proxy.client.user
+        message.content = "Hello"
+
+        self.assertFalse(self.bot_proxy._should_reply(message))
+
+    def test_should_reply_when_mentioned(self):
+        message = MagicMock(spec=Message)
+        message.author = MagicMock(spec=User)
+        message.author.id = 67890
+        message.channel = MagicMock()
+        message.channel.__class__.__name__ = "TextChannel"
+        message.content = "Hello"
+        self.bot_proxy.client.user.mentioned_in = MagicMock(return_value=True)
+        self.bot_proxy._bot_access_accept = MagicMock(return_value=True)
+
+        self.assertTrue(self.bot_proxy._should_reply(message))
+
+    def test_bot_access_accept_all(self):
+        message = MagicMock(spec=Message)
+        message.channel = MagicMock()
+        message.channel.__class__.__name__ = "DMChannel"
+
+        self.assertTrue(self.bot_proxy._bot_access_accept(message, access_mode="all"))
+
+    def test_bot_access_accept_none(self):
+        message = MagicMock(spec=Message)
+        message.channel = MagicMock()
+        message.channel.__class__.__name__ = "DMChannel"
+        self.assertFalse(self.bot_proxy._bot_access_accept(message, access_mode="none"))
+
+    def test_bot_access_accept_no_member(self):
+        message = MagicMock(spec=Message)
+        message.channel = MagicMock()
+        message.channel.__class__.__name__ = "DMChannel"
+
+        self.bot_proxy.get_message_author_member = MagicMock(return_value=None)
+
+        self.assertFalse(
+            self.bot_proxy._bot_access_accept(message, access_mode="member")
+        )
+
+    def test_parse_access_role(self):
+        access_mode = "role:admin,moderator"
+        expected_roles = ["admin", "moderator"]
+        self.assertEqual(self.bot_proxy.parse_access_role(access_mode), expected_roles)
 
 
-@pytest.fixture
-def mock_discord_bot_proxy():
-    bot_proxy = DiscordBotProxy()
-    bot_proxy.set_bot_client(Mock(spec=DiscordBotClient))
-    bot_proxy.client.user = Mock(id=123, mentioned_in=Mock(return_value=False))
-
-    return bot_proxy
-
-
-@pytest.fixture
-def mock_message():
-    message = Mock(spec=Message)
-    message.author.id = 456  # Different from bot user id to simulate another user
-    message.content = "Hello"
-    message.channel = Mock(spec=TextChannel)  # Default to text channel
-
-    return message
-
-
-@pytest.fixture
-def mock_dm_message(mock_message: Message):
-    mock_message.channel = Mock(spec=DMChannel)
-    mock_message.channel.recipient = Mock(id=456)
-
-    return mock_message
-
-
-@pytest.fixture
-def mock_member_with_developer_role():
-    role = Mock()
-    role.name = DISCORD_BOT_DEVELOPER_ROLE
-    member = Mock()
-    member.roles = [role]
-    return member
-
-
-@pytest.fixture
-def mock_thread_message(mock_message: Message):
-    mock_message.channel = Mock(spec=Thread)
-    mock_message.channel.owner_id = 123  # Same as bot user id
-
-    return mock_message
-
-
-@pytest.mark.asyncio
-async def test_is_trust_dm_with_developer_role(
-    mock_discord_bot_proxy, mock_dm_message, mock_member_with_developer_role
-):
-    with patch.object(
-        mock_discord_bot_proxy,
-        "get_message_author_member",
-        return_value=mock_member_with_developer_role,
-    ):
-        is_trust_dm = mock_discord_bot_proxy._is_trust_dm(mock_dm_message)
-        assert is_trust_dm is True
-
-
-@pytest.mark.asyncio
-async def test_is_trust_dm_without_developer_role(
-    mock_discord_bot_proxy, mock_dm_message
-):
-    # Mock member with no roles or different roles
-    mock_member = Mock()
-    mock_member.roles = []
-
-    with patch.object(
-        mock_discord_bot_proxy, "get_message_author_member", return_value=mock_member
-    ):
-        is_trust_dm = mock_discord_bot_proxy._is_trust_dm(mock_dm_message)
-        assert is_trust_dm is False
-
-
-@pytest.mark.asyncio
-async def test_should_reply_if_mentioned(
-    mock_discord_bot_proxy: DiscordBotProxy, mock_message: Message
-):
-    mock_discord_bot_proxy.client.user.mentioned_in.return_value = True
-    should_reply = mock_discord_bot_proxy._should_reply(mock_message)
-    assert should_reply is True
-
-
-@pytest.mark.asyncio
-async def test_should_reply_in_thread(
-    mock_discord_bot_proxy: DiscordBotProxy, mock_thread_message: Message
-):
-    should_reply = mock_discord_bot_proxy._should_reply(mock_thread_message)
-    assert should_reply is True
+if __name__ == "__main__":
+    unittest.main()

@@ -6,7 +6,8 @@ services:
     env_file:
       - .env
     environment:
-      - LLM_INTENT_MATCHING=true
+      - INTENT_LLM_MATCHING=true
+      - INTENT_CHAR_MATCHING=true
       - TEST_MODE=true
     command: pytest --verbose tests
 
@@ -17,7 +18,8 @@ services:
     env_file:
      - .env
     environment:
-      - LLM_INTENT_MATCHING=true
+      - INTENT_LLM_MATCHING=true
+      - INTENT_CHAR_MATCHING=true
       - RUN_INTEGRATION_TESTS=1
       - TEST_MODE=true
     command: pytest --verbose

@@ -30,7 +30,9 @@ class TestTaskGraphAgent(unittest.TestCase):
                 channel=IChannel(id=1302791861341126737, channel_type=IChannel.Type.DM),
                 attachments=None,
             )
-            responses = self.agent.process_message(message_event=message)
+            responses = self.agent.process_message(
+                message=message, message_intent=self.agent.intent
+            )
         self.assertEqual(len(responses), 1)
         self.assertEqual(
             responses[0],
