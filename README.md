@@ -21,8 +21,11 @@ Transform your interaction experiences with Fluctlight, where innovation meets s
 
 ## Spotlights
 
-| ![Spotlight 1](./design/spotlight1.jpeg) | ![Spotlight 2](./design/spotlight2.jpeg) | ![Spotlight 3](./design/spotlight3.png) |
-|:--------------------------------:|:--------------------------------:|:--------------------------------:|
+## Spotlights
+
+| RAG Conversation                   | Image Support                    | Audio Support                    |
+|:----------------------------------:|:--------------------------------:|:--------------------------------:|
+| ![Spotlight 1](./tutorial/img/oak6.png) | ![Spotlight 2](./tutorial/img/oak4.png) | ![Spotlight 3](./design/spotlight1.jpeg) |
 
 
 
