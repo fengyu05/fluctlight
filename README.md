@@ -31,6 +31,11 @@ Transform your interaction experiences with Fluctlight, where innovation meets s
 
 ## Setup
 
+Checkout the project with submodules included.
+```
+git clone --recurse-submodules git@github.com:fengyu05/fluctlight.git
+```
+
 1. **Rename** `env.template` to `.env`.
 2. **Fill in the required** `APIKEY` there.
 3. **Run** `make` for a simple setup.
@@ -78,3 +83,15 @@ Follow the [Slack Bot Setup Tutorial](https://api.slack.com/tutorials/tracks/cre
 
 - Log chat messages only when the debug flag is enabled.
 - The repository is not designed for production use, so exercise caution and use at your own risk.
+
+
+# FAQ
+
+1. makefiles is missing
+
+```
+make
+Makefile:5: makefiles/alembic.mk: No such file or directory
+```
+
+please ensure you checkout the project with `--recurse-submodules` because make file is make external module.

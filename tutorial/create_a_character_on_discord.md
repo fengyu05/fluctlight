@@ -1,3 +1,5 @@
+# 
+
 # Step 1: Create a Discord Bot and Obtain a Token
 
 Follow these steps to create a Discord bot and get your `DISCORD_BOT_TOKEN`:
@@ -176,3 +178,18 @@ If you have access to a Kubernetes cluster—whether on AWS EKS or GCP GKE—you
 Here's to seamless deployments and bringing your character to life in the cloud! 🚀✨
 
 For your convenience, you can find the deployment YAML template [here](./discord_server_depoyment.yaml).
+
+
+# FAQ
+
+1. makefiles is missing
+
+```
+make
+Makefile:5: makefiles/alembic.mk: No such file or directory
+```
+
+please ensure you checkout the project with `--recurse-submodules` because make file is make external module
+```
+git clone --recurse-submodules git@github.com:fengyu05/fluctlight.git
+```
