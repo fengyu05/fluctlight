@@ -1,3 +1,0 @@
-[submodule "makefiles"]
-	path = makefiles
-	url = git@github.com:hysp-tech/makefiles.git
