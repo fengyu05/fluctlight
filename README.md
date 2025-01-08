@@ -19,7 +19,7 @@ Transform your interaction experiences with Fluctlight, where innovation meets s
 
 ## Design
 
-![High Level Design](./design/design.png)
+![High Level Design](./tutorial/design/design.png)
 
 
 
