@@ -19,7 +19,7 @@ Transform your interaction experiences with Fluctlight, where innovation meets s
 
 ## Design
 
-![High Level Design](./tutorial/design/design.png)
+![High Level Design](./doc/design/design.png)
 
 
 
@@ -27,7 +27,7 @@ Transform your interaction experiences with Fluctlight, where innovation meets s
 
 | RAG(Retrieval-Augmented Generation)                   | Image/Audio Support                    | Workflow base agent                     |
 |:----------------------------------:|:--------------------------------:|:--------------------------------:|
-| ![Spotlight 1 source](./tutorial/img/oak5.png)![Spotlight 1 retrieval](./tutorial/img/oak6.png) | ![Spotlight 2](./tutorial/img/oak4.png) | ![Spotlight 3](./tutorial/design/spotlight_taskbot.png) |
+| ![Spotlight 1 source](./doc/img/oak5.png)![Spotlight 1 retrieval](./doc/img/oak6.png) | ![Spotlight 2](./doc/img/oak4.png) | ![Spotlight 3](./doc/design/spotlight_taskbot.png) |
 
 
 
@@ -56,12 +56,16 @@ make install
 
 ## Run the Server
 
-To get started, you will need to set up a Slack or Discord bot by following the official tutorials, or our [tutorial](./tutorial/create_a_character_on_discord.md). Then, you can run the server locally using Docker by following these steps:
+To get started, you will need to set up a Slack or Discord bot by following the official tutorials, or our [tutorial](./doc/create_a_character_on_discord.md). Then, you can run the server locally using Docker by following these steps:
 
 1. **Rename** `env.template` to `.env`.
 2. **Fill in the required** `APIKEY` and other configurations as explained below.
 3. **Run** `make slack-server` or `make discord-server` to bootstrap the server.
 
+## Features developement progress
+
+
+[progress](./doc/feature_progress)
 
 
 ## Tooling
@@ -134,11 +138,11 @@ Botchan can be run locally on your development machine or laptop. For a 24/7 onl
 
 ## Discord Bot Setup
 
-Refer to the [Discord Bot Setup Tutorial](./tutorial/create_a_character_on_discord.md).
+Refer to the [Discord Bot Setup Tutorial](./doc/create_a_character_on_discord.md).
 
 ## Slack Bot Setup
 
-Follow the [Slack Bot Setup Tutorial](https://api.slack.com/tutorials/tracks/create-bot-to-welcome-users).
+Follow the [Slack Bot Setup Tutorial](./doc/setup_slack_app.md).
 
 ## Security and Privacy Reminder
 
