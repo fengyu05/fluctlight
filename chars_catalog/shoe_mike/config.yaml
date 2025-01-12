@@ -1,0 +1,142 @@
+character_id: shoe_mike
+character_name: Shoe Mike
+system: |
+  Ignore all previous instructions.
+
+  I'm Mike, a seasoned shoe expert with years of experience in the footwear industry. I've dedicated my career to understanding the intricacies of shoe design, comfort, and style. My mission is to help customers find the perfect pair of shoes that meet their needs and preferences.
+
+  I work at a renowned shoe store where I assist customers in selecting the best footwear for various occasions, whether it's for running, casual wear, or formal events. My extensive knowledge of different shoe brands, materials, and fitting techniques allows me to provide personalized recommendations.
+
+  My conversations are friendly and informative, aimed at making the shoe-buying experience enjoyable and stress-free. I take pride in understanding each customer's unique requirements and guiding them towards the ideal choice.
+
+  In our interactions, you'll find me enthusiastic about discussing the latest shoe trends, the benefits of different shoe technologies, and tips for maintaining your footwear. I'm also committed to ensuring that every customer leaves with a pair of shoes that they love and that fits perfectly.
+
+  In essence, I'm Mike, your go-to shoe expert, dedicated to helping you find the perfect pair of shoes. Let's start our journey to find the best footwear for you!
+
+user: |
+  Context
+  {context}
+  Use the given context as a foundation to chat with the user. Always remember to embody Mike's character, speaking and acting as he would. Now begin your conversation with the user.
+  {query}
+
+visibility: public
+
+task_config:
+  name: "Shopping assisist"
+  description: "This task assisist shopper to discover what product are avialiable, place order and follow the status of the order."
+  intent_key: "SHOPPING_ASSIST"
+  workflow:
+    context:
+    - name: inventory
+      type: Inventory
+      valueOfObject:
+        products:
+          type: Table
+          valueOfTable:
+          - name: shoe_001
+            type: Product
+            valueOfObject:
+              id:
+                type: str
+                value: shoe_001
+              name:
+                type: str
+                value: "Asics running shoe GLIDERIDE MAX"
+              description:
+                type: str
+                value: "The GLIDERIDE® MAX shoe is the long-run cruiser that makes your training feel smoother and more consistent."
+              price:
+                type: float
+                value: 240.0
+              specs:
+                type: List
+                valueOfList:
+                - type: ProductSpec
+                  valueOfObject:
+                    name:
+                      type: str
+                      value: size
+                    choices:
+                      type: List
+                      valueOfList:
+                      - type: str
+                        value: size_6
+                      - type: str
+                        value: size_7
+                      - type: str
+                        value: size_8
+                      - type: str
+                        value: size_9
+          - name: shoe_002
+            type: Product
+            valueOfObject:
+              id:
+                type: str
+                value: shoe_002
+              name:
+                type: str
+                value: "Mens HOKA Bondi 8 Running Shoe - Black / White"
+              description:
+                type: str
+                value: "Mens HOKA Bondi 8 Running Shoe - Black / White, Size: 12.5, Wide | Footwear - Road Runner Sports."
+              price:
+                type: float
+                value: 141.0
+              specs:
+                type: List
+                valueOfList:
+                - type: ProductSpec
+                  valueOfObject:
+                    name:
+                      type: str
+                      value: size
+                    choices:
+                      type: List
+                      valueOfList:
+                      - type: str
+                        value: size_7
+                      - type: str
+                        value: size_8
+    nodes:
+      product_interests:
+        instruction: |
+          Take users input, match with the below inventory.
+          If the user does not mention information related to the products in the inventory, it should return false.
+
+          Chat history messages:
+          {{__HISTORY_MESSAGES.to_chat_history}}
+
+          User input: {{__INPUT_MESSAGE.text}}
+
+          Inventory:
+          {{inventory.all_product_desc}}
+        input_schema:
+          __INPUT_MESSAGE: IntakeMessage
+          __HISTORY_MESSAGES: IntakeHistoryMessage
+        output_schema: ProductMatch
+        success_criteria: |
+          Determine whether the product information described below is consistent with the data defined by the inventory.
+          If it is consistent, return True; otherwise, return False.
+
+          Product:
+          {{product_interests.product}}
+
+          Inventory:
+          {{inventory.all_product_desc}}
+      product_specs:
+        instruction: |
+          You seems to be interested in {{product_interests.product.product_id_and_name}}.
+          The product has specs {{product_interests.product.all_spec_in_json}}.
+
+          Chat history messages:
+          {{__HISTORY_MESSAGES.to_chat_history}}
+
+          User input: {{__INPUT_MESSAGE.text}}
+          How do you want your order.
+        input_schema:
+          __INPUT_MESSAGE: IntakeMessage
+          __HISTORY_MESSAGES: IntakeHistoryMessage
+          product_interests: ProductMatch
+        output_schema: Order
+    begin: product_interests
+    end: product_specs

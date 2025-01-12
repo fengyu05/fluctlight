@@ -11,3 +11,4 @@ ADD fluctlight ./fluctlight
 ADD tests ./tests
 ADD setup.py ./setup.py
 ADD pytest.ini ./pytest.ini
+ADD bin/run_tests.sh ./run_tests.sh
