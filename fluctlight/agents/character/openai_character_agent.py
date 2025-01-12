@@ -1,5 +1,4 @@
 from collections import defaultdict
-
 from langchain.callbacks.base import AsyncCallbackHandler
 from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_community.chat_models import ChatOpenAI
@@ -13,7 +12,9 @@ from fluctlight.embedding.chroma import get_chroma
 from fluctlight.intent.message_intent import MessageIntent
 from fluctlight.logger import get_logger
 from fluctlight.utt.emoji import strip_leading_emoji
-from fluctlight.agents.expert.task_agent import TaskAgent
+from fluctlight.agents.expert.workflow_agent import WorkflowAgent
+from fluctlight.agents.expert.workflow_config import WorkflowConfig
+from fluctlight.intent.message_intent import create_intent
 
 logger = get_logger(__name__)
 
@@ -22,6 +23,7 @@ _CHAR_INTENT_KEY = "CHAR"
 
 class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
     history_buffer: dict[str, list[BaseMessage]]
+    task_agent_buffer: dict[str, TaskAgent]
 
     def __init__(
         self,
@@ -47,6 +49,7 @@ class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
         self.db = get_chroma()
         self.catalog_manager = get_catalog_manager()
         self.history_buffer = defaultdict(list)
+        self.agent_buffer = {}
 
     @property
     def name(self) -> str:
@@ -65,14 +68,14 @@ class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
     ) -> list[str]:
         char_id = message_intent.get_metadata("char_id")
         character = self.catalog_manager.get_character(character_id=char_id)
-
         assert character, f"Character doesn't exisit, char_id={char_id}"
         logger.info("talking to character", char_id=char_id, char_name=character.name)
         output = []
+
         if character.task_config:
-            output.append("I'm a task agent")
-            response_text = self.task_agent_dispatch(
-                task_agent=None,  # TODO: construct a task agent from task_config
+            agent = self.get_or_create_workflow_agent(character=character, message=message)
+            response_text = self.agent_dispatch(
+                agent=agent, message=message
             )
         else:
             response_text = self.chat(
@@ -85,11 +88,13 @@ class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
             output.append(response_text)
         return output
 
-    def task_agent_dispatch(
+    def agent_dispatch(
         self,
-        task_agent: TaskAgent,  # pylint: disable=W0613:unused-argument
+        agent: WorkflowAgent,
+        message: IMessage,
     ) -> str:
-        return "Not implement yet"
+        response = agent.process_message(message=message)
+        return response
 
     def get_history(self, thread_id: str, character: Character) -> list[BaseMessage]:
         if thread_id not in self.history_buffer:
@@ -99,6 +104,19 @@ class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
                 )
             )
         return self.history_buffer[thread_id]
+    
+    def get_or_create_workflow_agent(self, character: Character, message: IMessage) -> WorkflowAgent:
+        thread_id = message.thread_message_id
+        if thread_id not in self.agent_buffer:
+            logger.info(f"Creating task agent for {thread_id}")
+            workflow_config = WorkflowConfig.load_from_config(character.task_config["workflow"])
+            self.agent_buffer[thread_id] = WorkflowAgent(
+                name=character.task_config["name"],
+                description=character.task_config["description"],
+                intent=create_intent(character.task_config["intent_key"]),
+                workflow_config=workflow_config,
+            )
+        return self.agent_buffer[thread_id]
 
     def chat(
         self,

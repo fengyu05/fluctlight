@@ -7,12 +7,12 @@ from fluctlight.agents.expert.data_model import (
     TaskEntity,
 )
 from fluctlight.agents.expert.task_agent import TaskAgent
-from fluctlight.agents.expert.task_workflow import (
-    TaskWorkflowConfig,
+from fluctlight.agents.expert.workflow import (
+    WorkflowConfig,
     WorkflowNodeConfig,
     build_workflow_graph,
 )
-from fluctlight.agents.expert.task_workflow_config import (
+from fluctlight.agents.expert.workflow_config import (
     INTERNAL_UPSTREAM_HISTORY_MESSAGES,
     INTERNAL_UPSTREAM_INPUT_MESSAGE,
     WorkflowNodeLLMResponse,
@@ -193,7 +193,7 @@ How do you want your order.
 
 
 def create_shopping_assist_task_graph_agent() -> TaskAgent:
-    config = TaskWorkflowConfig(
+    config = WorkflowConfig(
         nodes={
             "guide_to_buy_product": guide_to_buy_product_config(),
             "product_interests": product_interests_config(),

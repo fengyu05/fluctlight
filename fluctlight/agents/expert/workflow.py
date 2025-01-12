@@ -1,38 +1,32 @@
-from typing import Any, Callable, Dict, Hashable, List, Type, cast
+from typing import Any, Callable, Hashable, Type, cast
 
 from jinja2 import Template
 
-# from langchain_fireworks import ChatFireworks
-# from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langsmith import traceable
 from openai.types.chat import ParsedChatCompletion
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from pydantic import BaseModel
-
+from fluctlight.settings import OPENAI_WORKFLOW_STRUCTURE_MODEL_ID
 from fluctlight.agents.expert.data_model import TaskEntity
-from fluctlight.agents.expert.task_workflow_config import (
-    INTERNAL_UPSTREAM_HISTORY_MESSAGES,
-    INTERNAL_UPSTREAM_INPUT_MESSAGE,
-    TaskWorkflowConfig,
+from fluctlight.agents.expert.workflow_config import (
+    WorkflowConfig,
     WorkflowNodeConfig,
     WorkflowNodeOutput,
     WorkflowRunningState,
-    is_internal_upstream,
 )
 from fluctlight.open import OPENAI_CLIENT
 
 
 @traceable(run_type="llm")
 def chat_completion(
-    output_schema: Type[Any], messages: List[ChatCompletionMessageParam]
+    output_schema: Type[Any], messages: list[ChatCompletionMessageParam],
+    model_id: str = OPENAI_WORKFLOW_STRUCTURE_MODEL_ID
 ) -> ParsedChatCompletion:
-    model = "gpt-4o-mini-2024-07-18"
-    # model="gpt-4o-2024-08-06"
     completion = OPENAI_CLIENT.beta.chat.completions.parse(
         temperature=0,
-        model=model,
+        model=model_id,
         messages=messages,
         response_format=output_schema,
     )
@@ -43,7 +37,22 @@ def create_workflow_node(
     name: str,
     config: WorkflowNodeConfig,
 ) -> Callable[[WorkflowRunningState], WorkflowRunningState]:
-    def workflow_fn(state: WorkflowRunningState) -> WorkflowRunningState:
+    """
+    Create a workflow node function.
+
+    The node function takes a workflow state as argument, and returns a new workflow state.
+    The node function renders a Jinja template instruction string with the current workflow state,
+    and then uses an LLM to generate a structured output.
+    The structured output is then used to update the new workflow state.
+
+    Args:
+        name: The name of the node.
+        config: The configuration of the node.
+
+    Returns:
+        A node function.
+    """
+    def node_fn(state: WorkflowRunningState) -> WorkflowRunningState:
         running_state = state["running_state"]
 
         # LLM instruction
@@ -79,7 +88,7 @@ def create_workflow_node(
 
         return new_state
 
-    return workflow_fn
+    return node_fn
 
 
 def create_workflow_loop_output_node(
@@ -94,7 +103,7 @@ def create_workflow_loop_output_node(
     else:
         loop_message = ""
 
-    def loop_output_fn(state: WorkflowRunningState) -> WorkflowRunningState:
+    def node_fn(state: WorkflowRunningState) -> WorkflowRunningState:
         running_state = state["running_state"]
         template = Template(loop_message)
         text = template.render(running_state)
@@ -121,7 +130,7 @@ def create_workflow_loop_output_node(
 
         return new_state
 
-    return loop_output_fn
+    return node_fn
 
 
 def workflow_node_router(state: WorkflowRunningState) -> str:
@@ -168,111 +177,51 @@ def create_conditional_edge_chain(
     return node_conditional_edge
 
 
-# START -> router -> nodes... -> END
-def build_workflow_graph(config: TaskWorkflowConfig) -> CompiledStateGraph:
-    workflow = StateGraph(WorkflowRunningState)
+def build_workflow_graph(config: WorkflowConfig) -> CompiledStateGraph:
+    """
+    Builds a workflow graph based on the provided `TaskWorkflowConfig`.
 
-    workflow_node_route_table: Dict[Hashable, str] = {}
+    Example: START -> router -> nodes... -> END
+
+    Creates a state graph with nodes and edges based on the configuration. The graph
+    begins with a node router and constructs conditional edges between nodes based on
+    their success criteria. If a node has success criteria, loop output nodes are
+    created to handle both success and failure cases, directing the flow to the end
+    of the workflow.
+
+    Args:
+        config: The configuration for the task workflow.
+
+    Returns:
+        A compiled state graph representing the constructed workflow.
+    """
+    workflow = StateGraph(WorkflowRunningState)
+    workflow_node_route_table: dict[Hashable, str] = {}
 
     # Build and add nodes
     for k, v in config.nodes.items():
-        # add node route
         workflow_node_route_table[k] = k
-
-        # add nodes
         workflow.add_node(k, create_workflow_node(k, v))
 
     # Add START -> node router
-    workflow.add_conditional_edges(
-        START, workflow_node_router, workflow_node_route_table
-    )
+    workflow.add_conditional_edges(START, workflow_node_router, workflow_node_route_table)
 
     # Add edges
     for k, v in config.nodes.items():
         if v.success_criteria:
-            # Add loop output node
-            workflow.add_node(
-                k + "_LOOP_OUTPUT_TRUE",
-                create_workflow_loop_output_node(k, v, True),
-            )
-            workflow.add_node(
-                k + "_LOOP_OUTPUT_FALSE",
-                create_workflow_loop_output_node(k, v, False),
-            )
-            # Add loop node edges
+            # Add loop output nodes
+            workflow.add_node(k + "_LOOP_OUTPUT_TRUE", create_workflow_loop_output_node(k, v, True))
+            workflow.add_node(k + "_LOOP_OUTPUT_FALSE", create_workflow_loop_output_node(k, v, False))
             workflow.add_edge(k + "_LOOP_OUTPUT_TRUE", END)
             workflow.add_edge(k + "_LOOP_OUTPUT_FALSE", END)
             workflow.add_conditional_edges(
                 k,
                 create_conditional_edge_chain(k, v),
-                {
-                    "YES": k + "_LOOP_OUTPUT_TRUE",
-                    "NO": k + "_LOOP_OUTPUT_FALSE",
-                },
+                {"YES": k + "_LOOP_OUTPUT_TRUE", "NO": k + "_LOOP_OUTPUT_FALSE"},
             )
         else:
-            # normal node end edge
             workflow.add_edge(k, END)
 
-    graph = workflow.compile()
-
-    # show_graph_mermaid(config, graph)
-
-    return graph
+    return workflow.compile()
 
 
-def show_graph_mermaid(config: TaskWorkflowConfig, graph: CompiledStateGraph):
-    from io import BytesIO
-
-    import matplotlib.pyplot as plt
-    from PIL import Image
-
-    # logical graph
-    def fn(state):
-        return state
-
-    def edge_fn(state) -> str:
-        return ""
-
-    wf = StateGraph(WorkflowRunningState)
-    for k, v in config.nodes.items():
-        wf.add_node(k, fn)
-    for n in ["INPUT_MESSAGE", "HISTORY_MESSAGES"]:
-        wf.add_node(n, fn)
-        wf.add_edge(START, n)
-    wf.add_edge(START, config.begin)
-    wf.add_edge(config.end, END)
-    for k, v in config.nodes.items():
-        for upstream, _ in v.input_schema.items():
-            if is_internal_upstream(upstream):
-                if upstream == INTERNAL_UPSTREAM_INPUT_MESSAGE:
-                    wf.add_edge("INPUT_MESSAGE", k)
-                elif upstream == INTERNAL_UPSTREAM_HISTORY_MESSAGES:
-                    wf.add_edge("HISTORY_MESSAGES", k)
-                continue
-            if config.nodes[upstream].success_criteria:
-                wf.add_conditional_edges(
-                    upstream, edge_fn, {"YES": k, "NO: Loop Message": upstream}
-                )
-            else:
-                wf.add_edge(upstream, k)
-
-    logical_graph = wf.compile()
-    image1 = Image.open(BytesIO(logical_graph.get_graph().draw_mermaid_png()))
-
-    # executable graph
-    graph_bytes = graph.get_graph().draw_mermaid_png()
-    image2 = Image.open(BytesIO(graph_bytes))
-
-    total_height = image1.height + image2.height
-    max_width = max(image1.width, image2.width)
-
-    combined_image = Image.new("RGB", (max_width, total_height), (255, 255, 255))
-    combined_image.paste(image1, ((max_width - image1.width) // 2, 0))
-    combined_image.paste(image2, ((max_width - image2.width) // 2, image1.height))
-
-    plt.imshow(combined_image)
-
-    plt.axis("off")
-    plt.title("Graph Visualization from PNG Bytes")
-    plt.show()
