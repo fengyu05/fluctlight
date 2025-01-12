@@ -9,7 +9,7 @@ services:
       - INTENT_LLM_MATCHING=true
       - INTENT_CHAR_MATCHING=true
       - TEST_MODE=true
-    command: pytest --verbose tests
+    command: ["./run_tests.sh", "${TEST_FILES:-}"]
 
   test-int:
     build:
@@ -22,7 +22,7 @@ services:
       - INTENT_CHAR_MATCHING=true
       - RUN_INTEGRATION_TESTS=1
       - TEST_MODE=true
-    command: pytest --verbose
+    command: ["./run_tests.sh", "${TEST_FILES:-}"]
 
   ## For shell access and involve tooling, code are mounted
   shell:
