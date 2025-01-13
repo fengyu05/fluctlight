@@ -7,7 +7,7 @@ services:
       - .env
     environment:
       - INTENT_LLM_MATCHING=true
-      - INTENT_CHAR_MATCHING=true
+      - INTENT_CHAR_MATCHING=false
       - TEST_MODE=true
     command: ["./run_tests.sh", "${TEST_FILES:-}"]
 
@@ -19,7 +19,7 @@ services:
      - .env
     environment:
       - INTENT_LLM_MATCHING=true
-      - INTENT_CHAR_MATCHING=true
+      - INTENT_CHAR_MATCHING=false
       - RUN_INTEGRATION_TESTS=1
       - TEST_MODE=true
     command: ["./run_tests.sh", "${TEST_FILES:-}"]

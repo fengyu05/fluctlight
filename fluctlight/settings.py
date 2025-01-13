@@ -58,7 +58,7 @@ FIREWORKS_API_KEY = config_default("FIREWORKS_API_KEY")
 # Intent matching config
 INTENT_CHAR_MATCHING = config_default_bool("INTENT_CHAR_MATCHING", False)
 INTENT_LLM_MATCHING = config_default_bool("INTENT_LLM_MATCHING", False)
-INTENT_EMOJI_MATCHING = config_default_bool("INTENT_EMOJI_MATCHING", False)
+INTENT_EMOJI_MATCHING = config_default_bool("INTENT_EMOJI_MATCHING", True)
 
 # For INTENT_CHAR_MATCHING
 CHAR_AGENT_BIND = config_default("CHAR_AGENT_BIND")

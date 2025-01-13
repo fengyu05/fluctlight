@@ -29,9 +29,11 @@ class IntentMatcher(ABC):
     def __init__(
         self,
         agents: list[IntentAgent],
+        disable_cache: bool = False,
     ) -> None:
         self.intent_by_thread = {}
         self.agents = agents
+        self.disable_cache = disable_cache
         self.catalog_manager = get_catalog_manager()
 
     @abstractmethod
@@ -48,14 +50,16 @@ class IntentMatcher(ABC):
         Returns:
             MessageIntent: The detected message intent.
         """
-        if message.thread_message_id in self.intent_by_thread:
-            return self.intent_by_thread[message.thread_message_id]
+        if not self.disable_cache:
+            if message.thread_message_id in self.intent_by_thread:
+                return self.intent_by_thread[message.thread_message_id]
 
         message_intent = UNKNOWN_INTENT
         if not message.text:
             message_intent = DEFAULT_CHAT_INTENT
         else:
-            if INTENT_EMOJI_MATCHING and not message_intent.unknown:
+            # emoji > character > llm match
+            if INTENT_EMOJI_MATCHING and message_intent.unknown:
                 message_intent = get_message_intent_by_emoji(message.text)
             if INTENT_CHAR_MATCHING and message_intent.unknown:
                 message_intent = self.get_char_agent_intent(message.text)
@@ -63,10 +67,12 @@ class IntentMatcher(ABC):
                 message_intent = self.parse_intent(message.text)
 
         if message_intent.unknown:
+            logger.info("falling back to default chat intent")
             message_intent = DEFAULT_CHAT_INTENT
 
         logger.info("Matched intent", intent=message_intent)
-        self.intent_by_thread[message.thread_message_id] = message_intent
+        if not self.disable_cache:
+            self.intent_by_thread[message.thread_message_id] = message_intent
         return message_intent
 
     def get_char_emoji_map(self) -> dict[str, str]:
@@ -93,8 +99,9 @@ class IntentMatcherBase(IntentMatcher):
     def __init__(
         self,
         agents: list[IntentAgent],
+        disable_cache: bool = False,
     ) -> None:
-        super().__init__(agents)
+        super().__init__(agents=agents, disable_cache=disable_cache)
 
     def parse_intent(self, text: str) -> MessageIntent:
         return DEFAULT_CHAT_INTENT
