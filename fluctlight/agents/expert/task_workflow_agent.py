@@ -1,7 +1,4 @@
-import time
-from dataclasses import dataclass
 from typing import Any, Optional
-
 
 from fluctlight.agents.expert.data_model import (
     IntakeHistoryMessage,
@@ -10,7 +7,7 @@ from fluctlight.agents.expert.data_model import (
 from fluctlight.agents.expert.task_workflow_config import (
     INTERNAL_UPSTREAM_HISTORY_MESSAGES,
     INTERNAL_UPSTREAM_INPUT_MESSAGE,
-    WorkflowRunningState,
+    WorkflowInvocationState,
     is_internal_upstream,
     WorkflowConfig,
 )
@@ -21,12 +18,6 @@ from fluctlight.intent.message_intent import MessageIntent
 from fluctlight.logger import get_logger
 
 logger = get_logger(__name__)
-
-
-@dataclass
-class TaskInvocationContext:
-    context: dict[str, Any]
-    current_task_index: int = 0
 
 
 class TaskWorkflowAgent(MessageIntentAgent):
@@ -46,19 +37,20 @@ class TaskWorkflowAgent(MessageIntentAgent):
         self._config = config
         self._invocation_contexts = {}
 
-    def retrieve_context(self, message: IMessage) -> TaskInvocationContext:
-        if message.message_id not in self._invocation_contexts:
-            self._invocation_contexts[message.message_id] = TaskInvocationContext(
-                context=self._context.copy()
+    def retrieve_context(self, message: IMessage) -> WorkflowInvocationState:
+        if message.thread_message_id not in self._invocation_contexts:
+            logger.info("creating new invocation context")
+            running_state = self._context.copy()
+            running_state[INTERNAL_UPSTREAM_HISTORY_MESSAGES] = IntakeHistoryMessage(
+                messages=[]
             )
-        return self._invocation_contexts[message.message_id]
-
-    def process_message(
-        self, message: IMessage, message_intent: MessageIntent
-    ) -> list[str]:
-        ic = self.retrieve_context(message)
-        assert message.text, "message text is missing"
-        return self.run_task_with_ic(message.text, ic=ic)
+            self._invocation_contexts[message.thread_message_id] = (
+                WorkflowInvocationState(
+                    running_state=running_state,
+                    current_node=self._config.begin,
+                )
+            )
+        return self._invocation_contexts[message.thread_message_id]
 
     def _process_workflow_upstream_input(
         self, workflow_runner: WorkflowRunner, message_text: str
@@ -78,24 +70,18 @@ class TaskWorkflowAgent(MessageIntentAgent):
             elif upstream == INTERNAL_UPSTREAM_HISTORY_MESSAGES:
                 pass
 
-    def run_task_with_workflow_session(
-        self,
-        message_text: str,
-        ic: TaskInvocationContext,
-        workflow_session: WorkflowRunningState,
+    def process_message(
+        self, message: IMessage, message_intent: MessageIntent
     ) -> list[str]:
+        ic: WorkflowInvocationState = self.retrieve_context(message)
         responses: list[str] = []
 
         # build or restore worflow runner
-        workflow_runner = WorkflowRunner(
-            self._config,
-            workflow_session=workflow_session,
-        )
-
+        workflow_runner = WorkflowRunner(self._config, ic=ic)
         assistant_response = ""
         while not workflow_runner.is_ended():
             # handle workflow upstream input
-            self._process_workflow_upstream_input(workflow_runner, message_text)
+            self._process_workflow_upstream_input(workflow_runner, message.text)
 
             # workflow process
             _, assistant_response = workflow_runner.process_message()
@@ -107,35 +93,8 @@ class TaskWorkflowAgent(MessageIntentAgent):
 
         # update ic context
         responses.append(str(assistant_response))
-        workflow_runner.append_history_message(message_text, str(assistant_response))
-        ic.context.update({"workflow_session": workflow_runner.get_session_state()})
-
-        return responses
-
-    def run_task_with_ic(
-        self, message_text: str, ic: TaskInvocationContext
-    ) -> list[str]:
-        responses = []
-
-        if "workflow_session" in ic.context:
-            workflow_session: WorkflowRunningState = ic.context["workflow_session"]
-        else:
-            workflow_session: WorkflowRunningState = WorkflowRunningState(
-                session_id=str(int(time.time())),
-                current_node=self._config.begin,
-                running_state=ic.context.copy(),
-                output_state={},
-            )
-            workflow_session["running_state"][INTERNAL_UPSTREAM_HISTORY_MESSAGES] = (
-                IntakeHistoryMessage(messages=[])
-            )
-
-        responses = self.run_task_with_workflow_session(
-            message_text, ic, workflow_session
-        )
-        logger.info(
-            "Task agent process message", name=self._name, all_output=ic.context
-        )
+        workflow_runner.append_history_message(message.text, str(assistant_response))
+        logger.info("Task agent process message", name=self._name, ic=ic)
         return responses
 
     @property

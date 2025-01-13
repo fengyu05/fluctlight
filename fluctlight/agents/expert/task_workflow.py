@@ -14,7 +14,7 @@ from fluctlight.agents.expert.task_workflow_config import (
     WorkflowConfig,
     WorkflowNodeConfig,
     WorkflowNodeOutput,
-    WorkflowRunningState,
+    WorkflowInvocationState,
 )
 from fluctlight.open import OPENAI_CLIENT
 
@@ -37,7 +37,7 @@ def chat_completion(
 def create_workflow_node(
     name: str,
     config: WorkflowNodeConfig,
-) -> Callable[[WorkflowRunningState], WorkflowRunningState]:
+) -> Callable[[WorkflowInvocationState], WorkflowInvocationState]:
     """
     Create a workflow node function.
 
@@ -54,8 +54,8 @@ def create_workflow_node(
         A node function.
     """
 
-    def node_fn(state: WorkflowRunningState) -> WorkflowRunningState:
-        running_state = state["running_state"]
+    def node_fn(state: WorkflowInvocationState) -> WorkflowInvocationState:
+        running_state = state.running_state
 
         # LLM instruction
         template = Template(config.instruction)
@@ -72,19 +72,15 @@ def create_workflow_node(
         response = chat_completion(config.output_schema, messages)
         structured_content = response.choices[0].message.parsed
 
-        new_state = state.copy()
-        new_state["running_state"] = new_state["running_state"].copy()
-        new_state["output_state"] = new_state["output_state"].copy()
+        new_state = state.model_copy()
 
         # Check output state
         if structured_content and isinstance(structured_content, config.output_schema):
             if isinstance(structured_content, TaskEntity) or isinstance(
                 structured_content, str
             ):
-                new_state["running_state"][name] = structured_content
-                new_state["output_state"][name] = WorkflowNodeOutput(
-                    output_type="SUCCESS"
-                )
+                new_state.running_state[name] = structured_content
+                new_state.output_state[name] = WorkflowNodeOutput(output_type="SUCCESS")
             else:
                 raise ValueError(f"Output type not match, {structured_content}")
 
@@ -97,7 +93,7 @@ def create_workflow_loop_output_node(
     name: str,
     config: WorkflowNodeConfig,
     success: bool,
-) -> Callable[[WorkflowRunningState], WorkflowRunningState]:
+) -> Callable[[WorkflowInvocationState], WorkflowInvocationState]:
     mode = "text"
     if config.loop_message:
         mode = config.loop_message.mode
@@ -105,8 +101,8 @@ def create_workflow_loop_output_node(
     else:
         loop_message = ""
 
-    def node_fn(state: WorkflowRunningState) -> WorkflowRunningState:
-        running_state = state["running_state"]
+    def node_fn(state: WorkflowInvocationState) -> WorkflowInvocationState:
+        running_state = state.running_state
         template = Template(loop_message)
         text = template.render(running_state)
 
@@ -116,16 +112,13 @@ def create_workflow_loop_output_node(
             # TODO: text is llm instruction
             pass
 
-        new_state = state.copy()
-        # new_state["running_state"] = new_state["running_state"].copy()
-        new_state["output_state"] = new_state["output_state"].copy()
-
+        new_state = state.model_copy()
         if success:
-            new_state["output_state"][name] = WorkflowNodeOutput(
+            new_state.output_state[name] = WorkflowNodeOutput(
                 output_type="LOOP_MESSAGE_TRUE",
             )
         else:
-            new_state["output_state"][name] = WorkflowNodeOutput(
+            new_state.output_state[name] = WorkflowNodeOutput(
                 output_type="LOOP_MESSAGE_FALSE",
                 loop_message=text,
             )
@@ -135,9 +128,8 @@ def create_workflow_loop_output_node(
     return node_fn
 
 
-def workflow_node_router(state: WorkflowRunningState) -> str:
-    cur_node = state["current_node"]
-
+def workflow_node_router(state: WorkflowInvocationState) -> str:
+    cur_node = state.current_node
     if cur_node == "":
         raise ValueError(f"Workflow running state no node found. {state}")
     return cur_node
@@ -150,11 +142,11 @@ class ConditionalOutput(BaseModel):
 def create_conditional_edge_chain(
     name: str,
     node_config: WorkflowNodeConfig,
-) -> Callable[[WorkflowRunningState], str]:
+) -> Callable[[WorkflowInvocationState], str]:
     success_criteria: str = node_config.success_criteria or ""
 
-    def node_conditional_edge(state: WorkflowRunningState) -> str:
-        context = state["running_state"]
+    def node_conditional_edge(state: WorkflowInvocationState) -> str:
+        context = state.running_state
 
         template = Template(success_criteria)
         text = template.render(context)
@@ -197,7 +189,7 @@ def build_workflow_graph(config: WorkflowConfig) -> CompiledStateGraph:
     Returns:
         A compiled state graph representing the constructed workflow.
     """
-    workflow = StateGraph(WorkflowRunningState)
+    workflow = StateGraph(WorkflowInvocationState)
     workflow_node_route_table: dict[Hashable, str] = {}
 
     # Build and add nodes

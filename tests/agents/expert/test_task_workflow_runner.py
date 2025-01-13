@@ -3,7 +3,7 @@ from fluctlight.agents.expert.task_workflow_runner import WorkflowRunner
 from fluctlight.agents.expert.task_workflow_config import (
     WorkflowConfig,
     WorkflowNodeConfig,
-    WorkflowRunningState,
+    WorkflowInvocationState,
     INTERNAL_UPSTREAM_HISTORY_MESSAGES,
 )
 from fluctlight.agents.expert.data_model import TaskEntity
@@ -39,16 +39,10 @@ class TestWorkflowRunner(unittest.TestCase):
             begin="start",
             end="end",
         )
-        self.workflow_session = WorkflowRunningState(
-            running_state={},
-            output_state={},
+        self.ic = WorkflowInvocationState(
             current_node="start",
         )
-        self.runner = WorkflowRunner(self.config, self.workflow_session)
-
-    def test_get_session_state(self) -> None:
-        state = self.runner.get_session_state()
-        self.assertEqual(state, self.workflow_session)
+        self.runner = WorkflowRunner(self.config, self.ic)
 
     def test_get_current_node(self) -> None:
         current_node = self.runner.get_current_node()
@@ -69,16 +63,14 @@ class TestWorkflowRunner(unittest.TestCase):
     def test_update_running_state(self) -> None:
         context = {"key": "value"}
         self.runner.update_running_state(context)
-        self.assertEqual(
-            self.runner.get_session_state()["running_state"]["key"], "value"
-        )
+        self.assertEqual(self.runner.ic.running_state["key"], "value")
 
     def test_append_history_message(self) -> None:
         self.runner.append_history_message("user message", "assistant message")
-        history = self.runner.get_session_state()["running_state"][
-            INTERNAL_UPSTREAM_HISTORY_MESSAGES
-        ]
-        self.assertEqual(history.messages, ["user message", "assistant message"])
+        self.assertEqual(
+            self.runner.ic.running_state[INTERNAL_UPSTREAM_HISTORY_MESSAGES].messages,
+            ["user message", "assistant message"],
+        )
 
     def test_process_message(self) -> None:
         result = self.runner.process_message()

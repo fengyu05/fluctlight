@@ -5,7 +5,7 @@ from fluctlight.agents.expert.task_workflow_config import (
     INTERNAL_UPSTREAM_HISTORY_MESSAGES,
     INTERNAL_UPSTREAM_INPUT_MESSAGE,
     WorkflowConfig,
-    WorkflowRunningState,
+    WorkflowInvocationState,
     is_internal_upstream,
 )
 
@@ -23,7 +23,7 @@ def show_graph_mermaid(config: WorkflowConfig, graph: CompiledStateGraph):
     def edge_fn(state) -> str:
         return ""
 
-    wf = StateGraph(WorkflowRunningState)
+    wf = StateGraph(WorkflowInvocationState)
     for k, v in config.nodes.items():
         wf.add_node(k, fn)
     for n in ["INPUT_MESSAGE", "HISTORY_MESSAGES"]:
