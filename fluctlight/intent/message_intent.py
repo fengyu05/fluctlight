@@ -53,7 +53,8 @@ UNKNOWN_INTENT = create_intent(unknown=True)
 DEFAULT_CHAT_INTENT = MessageIntent(key="CHAT", metadata={_METHOD: _DEFAULT})
 
 _EMOJI_INTENT_MAP = {
-    "miao": ["cat"],
+    "MIAO": ["cat"],
+    "SHOPPING_ASSIST": ["shop"],
 }
 
 _INTENT_BY_EMOJI = {

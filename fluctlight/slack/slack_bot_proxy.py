@@ -31,9 +31,14 @@ class SlackBotProxy(BotProxy, MessagesFetcher, SlackChat, SlackReaction, Singlet
         self.chat_agent = OpenAiChatAgent(transcribe_slack_audio=self.transcribe_audio)
         self.adapter = Adapter()
 
+        from fluctlight.agents.expert.shopping_assist import (
+            create_shopping_assist_task_graph_agent,
+        )
+
         self.agents = [
             create_default_character_agent(),
             self.chat_agent,
+            create_shopping_assist_task_graph_agent(),
         ]
         self.intent_matcher = get_default_intent_matcher(self.agents)
 
