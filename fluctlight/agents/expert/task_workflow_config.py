@@ -1,7 +1,6 @@
-from typing import Any, Literal, Type, Dict
+from typing import Any, Literal, Type
 
 from pydantic import BaseModel
-from typing_extensions import TypedDict
 from fluctlight.logger import get_logger
 from fluctlight.agents.expert.data_model import TaskEntity
 
@@ -21,7 +20,7 @@ INTERNAL_UPSTREAM_INPUT_MESSAGE = "__INPUT_MESSAGE"
 INTERNAL_UPSTREAM_HISTORY_MESSAGES = "__HISTORY_MESSAGES"
 
 # Global type map with full paths
-type_aliases: Dict[str, str] = {
+type_aliases: dict[str, str] = {
     "IntakeMessage": "fluctlight.agents.expert.data_model.IntakeMessage",
     "IntakeHistoryMessage": "fluctlight.agents.expert.data_model.IntakeHistoryMessage",
     "ProductMatch": "fluctlight.agents.expert.shopping_assist.ProductMatch",
@@ -40,7 +39,7 @@ class WorkflowNodeLLMResponse(BaseModel):
 
 class WorkflowNodeConfig(BaseModel):
     instruction: str
-    input_schema: Dict[str, Type[WorkflowSchemaType]]
+    input_schema: dict[str, Type[WorkflowSchemaType]]
     output_schema: Type[WorkflowSchemaType]
     loop_message: WorkflowNodeLoopMessage | None = None
     success_criteria: str | None = None  # TODO: move into WorkflowNodeLoopMessage
@@ -48,8 +47,8 @@ class WorkflowNodeConfig(BaseModel):
 
     @classmethod
     def _load_input_schema(
-        cls, input_schema: Dict[str, str]
-    ) -> Dict[str, Type[WorkflowSchemaType]]:
+        cls, input_schema: dict[str, str]
+    ) -> dict[str, Type[WorkflowSchemaType]]:
         """Load input schema types from string representation."""
         return {k: cls._load_type(v) for k, v in input_schema.items()}
 
@@ -70,7 +69,7 @@ class WorkflowNodeConfig(BaseModel):
         return getattr(module, class_name)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "WorkflowNodeConfig":
+    def load_from_config(cls, config: dict[str, Any]) -> "WorkflowNodeConfig":
         """Load WorkflowNodeConfig from a dictionary configuration."""
         return WorkflowNodeConfig(
             instruction=config["instruction"],
@@ -83,7 +82,7 @@ class WorkflowNodeConfig(BaseModel):
 
 
 class WorkflowConfig(BaseModel):
-    nodes: Dict[str, WorkflowNodeConfig]
+    nodes: dict[str, WorkflowNodeConfig]
     begin: str
     end: str
 
@@ -93,11 +92,10 @@ class WorkflowNodeOutput(BaseModel):
     loop_message: str | None = None
 
 
-class WorkflowRunningState(TypedDict):
-    session_id: str
+class WorkflowInvocationState(BaseModel):
     current_node: str
-    running_state: Dict[str, Any]
-    output_state: Dict[str, WorkflowNodeOutput]
+    running_state: dict[str, Any] = {}
+    output_state: dict[str, WorkflowNodeOutput] = {}
 
 
 def has_internal_upstreams(upstreams: list[str]) -> bool:

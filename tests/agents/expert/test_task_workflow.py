@@ -6,7 +6,7 @@ from fluctlight.agents.expert.task_workflow import (
     workflow_node_router,
     create_conditional_edge_chain,
     build_workflow_graph,
-    WorkflowRunningState,
+    WorkflowInvocationState,
     WorkflowNodeConfig,
     ConditionalOutput,
 )
@@ -31,14 +31,14 @@ class TestTaskWorkflow(unittest.TestCase):
             loop_message=None,
             input_schema={},
         )
-        state = WorkflowRunningState(
+        state = WorkflowInvocationState(
             running_state={},
             output_state={},
             current_node="",
         )
         node_fn = create_workflow_node("test_node", config)
         new_state = node_fn(state)
-        self.assertIn("test_node", new_state["running_state"])
+        self.assertIn("test_node", new_state.running_state)
 
     def test_create_workflow_loop_output_node(self) -> None:
         config = WorkflowNodeConfig(
@@ -48,7 +48,7 @@ class TestTaskWorkflow(unittest.TestCase):
             loop_message=None,
             input_schema={},
         )
-        state = WorkflowRunningState(
+        state = WorkflowInvocationState(
             running_state={},
             output_state={},
             current_node="",
@@ -56,11 +56,11 @@ class TestTaskWorkflow(unittest.TestCase):
         loop_fn = create_workflow_loop_output_node("test_node", config, True)
         new_state = loop_fn(state)
         self.assertEqual(
-            new_state["output_state"]["test_node"].output_type, "LOOP_MESSAGE_TRUE"
+            new_state.output_state["test_node"].output_type, "LOOP_MESSAGE_TRUE"
         )
 
     def test_workflow_node_router(self) -> None:
-        state = WorkflowRunningState(
+        state = WorkflowInvocationState(
             running_state={},
             output_state={},
             current_node="test_node",
@@ -83,7 +83,7 @@ class TestTaskWorkflow(unittest.TestCase):
             loop_message=None,
             input_schema={},
         )
-        state = WorkflowRunningState(
+        state = WorkflowInvocationState(
             running_state={},
             output_state={},
             current_node="",

@@ -1,10 +1,11 @@
 from typing import Any
-
-from fluctlight.agents.expert.data_model import IntakeHistoryMessage
+from fluctlight.agents.expert.data_model import (
+    IntakeHistoryMessage,
+)
 from fluctlight.agents.expert.task_workflow_config import (
     INTERNAL_UPSTREAM_HISTORY_MESSAGES,
     WorkflowNodeOutput,
-    WorkflowRunningState,
+    WorkflowInvocationState,
     has_internal_upstreams,
     WorkflowConfig,
 )
@@ -14,24 +15,24 @@ from fluctlight.logger import get_logger
 logger = get_logger(__name__)
 
 _END = "END"
-_START = "START"
 
 
 class WorkflowRunner:
     def __init__(
         self,
         config: WorkflowConfig,
-        workflow_session: WorkflowRunningState,
+        ic: WorkflowInvocationState,
     ):
         self._config = config
         self._graph = build_workflow_graph(config)
-        self._state = workflow_session.copy()
+        self._ic: WorkflowInvocationState = ic
 
-    def get_session_state(self) -> WorkflowRunningState:
-        return self._state
+    @property
+    def ic(self) -> WorkflowInvocationState:
+        return self._ic
 
     def get_current_node(self) -> str:
-        return self._state["current_node"]
+        return self._ic.current_node
 
     def is_ended(self) -> bool:
         return self.get_current_node() == _END
@@ -61,29 +62,37 @@ class WorkflowRunner:
 
     def update_running_state(self, context: dict[str, Any]):
         """Updates the running state with the provided context."""
-        self._state["running_state"].update(context)
+        self._ic.running_state.update(context)
 
     def append_history_message(self, user: str, assistant: str):
         """Appends user and assistant messages to the history."""
-        history = self._state["running_state"].get(
-            INTERNAL_UPSTREAM_HISTORY_MESSAGES, IntakeHistoryMessage(messages=[])
+        if INTERNAL_UPSTREAM_HISTORY_MESSAGES not in self._ic.running_state:
+            self._ic.running_state[INTERNAL_UPSTREAM_HISTORY_MESSAGES] = (
+                IntakeHistoryMessage()
+            )
+        self._ic.running_state[INTERNAL_UPSTREAM_HISTORY_MESSAGES].messages.extend(
+            [user, assistant]
         )
-        history.messages.extend([user, assistant])
-        self._state["running_state"][INTERNAL_UPSTREAM_HISTORY_MESSAGES] = history
 
     def process_message(self, *args: Any, **kwargs: Any) -> tuple[str, Any]:
         cur_node = self.get_current_node()
-        events = self._graph.stream(self._state, stream_mode="values")
+        events = self._graph.stream(self._ic, stream_mode="values")
         for event in events:
-            last_state = event
+            last_event = event
 
-        output_value = last_state["running_state"][cur_node]
-        output_state: WorkflowNodeOutput = last_state["output_state"][cur_node]
+        # Cast the event(a dict) back to WorkflowInvocationState
+        last_state = WorkflowInvocationState(
+            current_node=last_event["current_node"],
+            running_state=last_event["running_state"],
+            output_state=last_event["output_state"],
+        )
+        output_value = last_state.running_state[cur_node]
+        output_state: WorkflowNodeOutput = last_state.output_state[cur_node]
         result = (cur_node, output_value)
 
         # update state
-        self._state["running_state"][cur_node] = output_value
-        self._state["output_state"][cur_node] = output_state
+        self._ic.running_state[cur_node] = output_value
+        self._ic.output_state[cur_node] = output_state
 
         if (
             output_state.output_type == "SUCCESS"
@@ -91,11 +100,11 @@ class WorkflowRunner:
         ):
             # move to next step
             if cur_node == self._config.end:
-                self._state["current_node"] = _END
+                self._ic.current_node = _END
             else:
                 downstreams = self.get_node_downstreams(cur_node)
                 next_downstream = downstreams[0]
-                self._state["current_node"] = next_downstream
+                self._ic.current_node = next_downstream
         elif output_state.output_type == "LOOP_MESSAGE_FALSE":
             # output loop message
             result = (cur_node, output_state.loop_message)

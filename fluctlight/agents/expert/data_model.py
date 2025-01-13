@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional, Type, Union
+from typing import Any, Callable, Optional, Type, Union
 
 from pydantic import BaseModel
 
@@ -34,7 +34,7 @@ class IntakeMessage(TaskEntity):
 
 
 class IntakeHistoryMessage(TaskEntity):
-    messages: List[str]
+    messages: list[str] = []
 
     @property
     def to_chat_history(self) -> str:
