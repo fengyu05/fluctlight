@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Any
 
+
 class Character(BaseModel):
     character_id: str
     name: str

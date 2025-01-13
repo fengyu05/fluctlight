@@ -13,7 +13,7 @@ from fluctlight.embedding.chroma import get_chroma
 from fluctlight.intent.message_intent import MessageIntent
 from fluctlight.logger import get_logger
 from fluctlight.utt.emoji import strip_leading_emoji
-from fluctlight.agents.expert.task_agent import TaskAgent
+from fluctlight.agents.expert.task_workflow_agent import TaskWorkflowAgent
 
 logger = get_logger(__name__)
 
@@ -87,7 +87,7 @@ class OpenAICharacterAgent(CharacterAgent, MessageIntentAgent):
 
     def task_agent_dispatch(
         self,
-        task_agent: TaskAgent,  # pylint: disable=W0613:unused-argument
+        task_agent: TaskWorkflowAgent,  # pylint: disable=W0613:unused-argument
     ) -> str:
         return "Not implement yet"
 

@@ -9,7 +9,7 @@ from fluctlight.data_model.interface.message import IMessage
 from tests.intergation_test_utils import skip_integration_tests
 
 
-class TestTaskGraphAgent(unittest.TestCase):
+class TestTaskWorkflowAgent(unittest.TestCase):
     def setUp(self):
         self.agent = create_shopping_assist_task_graph_agent()
 
@@ -33,11 +33,12 @@ class TestTaskGraphAgent(unittest.TestCase):
             responses = self.agent.process_message(
                 message=message, message_intent=self.agent.intent
             )
-        self.assertEqual(len(responses), 1)
-        self.assertEqual(
-            responses[0],
-            "product_id='shoe_001' quantity='1' spec=name: size\nchoices: ['size_9']",
-        )
+            if idx == 2:
+                self.assertEqual(len(responses), 1)
+                self.assertEqual(
+                    responses[0],
+                    "product_id='shoe_001' quantity='1' spec=name: size\nchoices: ['size_9']",
+                )
 
 
 # Run the tests
