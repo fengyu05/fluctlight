@@ -126,7 +126,7 @@ Inventory:
             mode="text",
             message="{{guide_to_buy_product.assistant_response_msg}}",
         ),
-        success_criteria="""Math user intention, if is buy shoe, return True, otherwise return False.
+        success_criteria="""Match user intention, if is buy shoe, return True, otherwise return False.
 UserIntent: {{guide_to_buy_product.user_intent}}
 """,
     )

@@ -21,6 +21,7 @@ Transform your interaction experiences with Fluctlight, where innovation meets s
 
 ![High Level Design](./doc/design/design.png)
 
+[Details design blueprint](./doc/blueprint.md)
 
 
 ## Spotlights
