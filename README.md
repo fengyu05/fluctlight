@@ -161,5 +161,3 @@ Makefile:5: makefiles/alembic.mk: No such file or directory
 
 please ensure you checkout the project with `--recurse-submodules` because make file is make external module.
 or at least run `make install` once.
-
-

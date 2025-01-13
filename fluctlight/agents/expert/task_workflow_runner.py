@@ -1,23 +1,30 @@
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any
 
 from fluctlight.agents.expert.data_model import IntakeHistoryMessage
 from fluctlight.agents.expert.task_workflow_config import (
     INTERNAL_UPSTREAM_HISTORY_MESSAGES,
     WorkflowNodeOutput,
-    WorkflowRunnerConfig,
     WorkflowRunningState,
     has_internal_upstreams,
+    WorkflowConfig,
 )
+from fluctlight.agents.expert.task_workflow import build_workflow_graph
+from fluctlight.logger import get_logger
+
+logger = get_logger(__name__)
+
+_END = "END"
+_START = "START"
 
 
 class WorkflowRunner:
     def __init__(
         self,
-        config: WorkflowRunnerConfig,
+        config: WorkflowConfig,
         workflow_session: WorkflowRunningState,
     ):
-        self._config = config.config
-        self._graph = config.state_graph
+        self._config = config
+        self._graph = build_workflow_graph(config)
         self._state = workflow_session.copy()
 
     def get_session_state(self) -> WorkflowRunningState:
@@ -26,43 +33,45 @@ class WorkflowRunner:
     def get_current_node(self) -> str:
         return self._state["current_node"]
 
-    def get_current_upstreams(self) -> List[str]:
+    def is_ended(self) -> bool:
+        return self.get_current_node() == _END
+
+    def get_current_upstreams(self) -> list[str]:
+        """Returns the upstream nodes for the current node."""
         cur_node = self.get_current_node()
-        if cur_node == "END":
+        if cur_node == _END:
             return []
 
         if cur_node not in self._config.nodes:
-            raise ValueError(f"{cur_node} not exist. {self._config}")
+            raise ValueError(f"{cur_node} does not exist in the configuration.")
 
         input_schema = self._config.nodes[cur_node].input_schema
-        return [k for k, _ in input_schema.items()]
+        return list(input_schema.keys())
 
     def current_has_internal_upstreams(self) -> bool:
+        """Checks if the current node has internal upstreams."""
         return has_internal_upstreams(self.get_current_upstreams())
 
-    def get_node_downstreams(self, node: str) -> List[str]:
-        downstreams: Set[str] = set()
-        for k, v in self._config.nodes.items():
-            for upstream, _ in v.input_schema.items():
-                if upstream == node:
-                    downstreams.add(k)
+    def get_node_downstreams(self, node: str) -> list[str]:
+        """Returns the downstream nodes for a given node."""
+        downstreams = {
+            k for k, v in self._config.nodes.items() if node in v.input_schema
+        }
         return list(downstreams)
 
-    def update_running_state(self, context: Dict[str, Any]):
+    def update_running_state(self, context: dict[str, Any]):
+        """Updates the running state with the provided context."""
         self._state["running_state"].update(context)
 
     def append_history_message(self, user: str, assistant: str):
-        if INTERNAL_UPSTREAM_HISTORY_MESSAGES in self._state["running_state"]:
-            history: IntakeHistoryMessage = self._state["running_state"][
-                INTERNAL_UPSTREAM_HISTORY_MESSAGES
-            ]
-        else:
-            history = IntakeHistoryMessage(messages=[])
-            self._state["running_state"][INTERNAL_UPSTREAM_HISTORY_MESSAGES] = history
-        history.messages.append(user)
-        history.messages.append(assistant)
+        """Appends user and assistant messages to the history."""
+        history = self._state["running_state"].get(
+            INTERNAL_UPSTREAM_HISTORY_MESSAGES, IntakeHistoryMessage(messages=[])
+        )
+        history.messages.extend([user, assistant])
+        self._state["running_state"][INTERNAL_UPSTREAM_HISTORY_MESSAGES] = history
 
-    def process_message(self, *args: Any, **kwargs: Any) -> Tuple[str, Any]:
+    def process_message(self, *args: Any, **kwargs: Any) -> tuple[str, Any]:
         cur_node = self.get_current_node()
         events = self._graph.stream(self._state, stream_mode="values")
         for event in events:
@@ -82,7 +91,7 @@ class WorkflowRunner:
         ):
             # move to next step
             if cur_node == self._config.end:
-                self._state["current_node"] = "END"
+                self._state["current_node"] = _END
             else:
                 downstreams = self.get_node_downstreams(cur_node)
                 next_downstream = downstreams[0]

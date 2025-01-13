@@ -3,21 +3,16 @@ from typing import Literal
 from fluctlight.agents.expert.data_model import (
     IntakeHistoryMessage,
     IntakeMessage,
-    TaskConfig,
     TaskEntity,
 )
-from fluctlight.agents.expert.task_agent import TaskAgent
-from fluctlight.agents.expert.task_workflow import (
-    TaskWorkflowConfig,
-    WorkflowNodeConfig,
-    build_workflow_graph,
-)
+from fluctlight.agents.expert.task_workflow_agent import TaskWorkflowAgent
 from fluctlight.agents.expert.task_workflow_config import (
     INTERNAL_UPSTREAM_HISTORY_MESSAGES,
     INTERNAL_UPSTREAM_INPUT_MESSAGE,
     WorkflowNodeLLMResponse,
     WorkflowNodeLoopMessage,
-    WorkflowRunnerConfig,
+    WorkflowConfig,
+    WorkflowNodeConfig,
 )
 from fluctlight.intent.message_intent import create_intent
 
@@ -192,8 +187,8 @@ How do you want your order.
     )
 
 
-def create_shopping_assist_task_graph_agent() -> TaskAgent:
-    config = TaskWorkflowConfig(
+def create_shopping_assist_task_graph_agent() -> TaskWorkflowAgent:
+    config = WorkflowConfig(
         nodes={
             "guide_to_buy_product": guide_to_buy_product_config(),
             "product_interests": product_interests_config(),
@@ -203,42 +198,12 @@ def create_shopping_assist_task_graph_agent() -> TaskAgent:
         end="product_specs",
     )
 
-    agent = TaskAgent(
+    agent = TaskWorkflowAgent(
         name="Shopping assisist",
         description="This task assisist shopper to discover what product are avialiable, place order and follow the status of the order.",
         intent=create_intent(INTENT_KEY),
         context={"inventory": create_inventory()},
-        workflow_runner_config=WorkflowRunnerConfig(
-            config=config,
-            state_graph=build_workflow_graph(config),
-        ),
-        task_graph=[],
+        config=config,
     )
 
     return agent
-
-
-def create_shopping_assisist_task_agent() -> TaskAgent:
-    return TaskAgent(
-        name="Shopping assisist",
-        description="This task assisist shopper to discover what product are avialiable, place order and follow the status of the order.",
-        intent=create_intent(INTENT_KEY),
-        context={"inventory": create_inventory()},
-        task_graph=[
-            TaskConfig(
-                task_key="product_interests",
-                instruction="Take users input, match with the below inventors. User input: {message.text} \n Inventory: {inventory.all_product_desc} ",
-                input_schema={"message": IntakeMessage},
-                output_schema=ProductMatch,
-            ),
-            TaskConfig(
-                task_key="product_specs",
-                instruction="You seems to be interested in {product_interests.product.desc_short}. \n The product has specs {product_interests.product.all_specs}. How do you want your order.",
-                input_schema={
-                    "message": IntakeMessage,
-                    "product_interests": ProductMatch,
-                },
-                output_schema=Order,
-            ),
-        ],
-    )
