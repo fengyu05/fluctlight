@@ -39,7 +39,6 @@ class TaskWorkflowAgent(MessageIntentAgent):
 
     def retrieve_context(self, message: IMessage) -> WorkflowInvocationState:
         if message.thread_message_id not in self._invocation_contexts:
-            logger.info("creating new invocation context")
             running_state = self._context.copy()
             running_state[INTERNAL_UPSTREAM_HISTORY_MESSAGES] = IntakeHistoryMessage(
                 messages=[]
@@ -84,11 +83,11 @@ class TaskWorkflowAgent(MessageIntentAgent):
             self._process_workflow_upstream_input(workflow_runner, message.text)
 
             # workflow process
-            _, assistant_response = workflow_runner.process_message()
+            _, assistant_response = workflow_runner.run()
 
             # if current unhandled node have input message, break to obtain new input message
             # otherwise continue to handle next node
-            if workflow_runner.current_has_internal_upstreams():
+            if workflow_runner.has_input_message_in_current_upstreams():
                 break
 
         # update ic context

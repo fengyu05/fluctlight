@@ -144,7 +144,7 @@ Inventory:
 {{inventory.all_product_desc}}
 """,
         input_schema={
-            # INTERNAL_UPSTREAM_INPUT_MESSAGE: IntakeMessage,
+            INTERNAL_UPSTREAM_INPUT_MESSAGE: IntakeMessage,
             "guide_to_buy_product": UserIntent,
         },
         output_schema=ProductMatch,

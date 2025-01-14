@@ -53,7 +53,7 @@ class TestWorkflowRunner(unittest.TestCase):
         self.assertEqual(upstreams, [])
 
     def test_current_has_internal_upstreams(self) -> None:
-        has_upstreams = self.runner.current_has_internal_upstreams()
+        has_upstreams = self.runner.has_input_message_in_current_upstreams()
         self.assertFalse(has_upstreams)
 
     def test_get_node_downstreams(self) -> None:
@@ -73,7 +73,7 @@ class TestWorkflowRunner(unittest.TestCase):
         )
 
     def test_process_message(self) -> None:
-        result = self.runner.process_message()
+        result = self.runner.run()
         self.assertEqual(
             result,
             ("start", SomeEntityA(value="This is a sample response for SomeEntityA.")),

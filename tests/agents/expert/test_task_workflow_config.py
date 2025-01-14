@@ -3,7 +3,6 @@ import unittest
 from unittest.mock import patch, MagicMock
 from fluctlight.agents.expert.task_workflow_config import (
     WorkflowNodeConfig,
-    has_internal_upstreams,
     is_internal_upstream,
 )
 from fluctlight.agents.expert.data_model import TaskEntity
@@ -55,10 +54,6 @@ class TestWorkflowConfig(unittest.TestCase):
         self.assertEqual(config.success_criteria, "Test criteria")
         self.assertIsNotNone(config.input_schema)
         self.assertIsNotNone(config.output_schema)
-
-    def test_has_internal_upstreams(self) -> None:
-        upstreams = ["__INPUT_MESSAGE", "other_message"]
-        self.assertTrue(has_internal_upstreams(upstreams))
 
     def test_is_internal_upstream(self) -> None:
         self.assertTrue(is_internal_upstream("__INPUT_MESSAGE"))
