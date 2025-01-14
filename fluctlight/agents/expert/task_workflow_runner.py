@@ -3,10 +3,10 @@ from fluctlight.agents.expert.data_model import (
     IntakeHistoryMessage,
 )
 from fluctlight.agents.expert.task_workflow_config import (
+    INTERNAL_UPSTREAM_INPUT_MESSAGE,
     INTERNAL_UPSTREAM_HISTORY_MESSAGES,
     WorkflowNodeOutput,
     WorkflowInvocationState,
-    has_internal_upstreams,
     WorkflowConfig,
 )
 from fluctlight.agents.expert.task_workflow import build_workflow_graph
@@ -49,9 +49,8 @@ class WorkflowRunner:
         input_schema = self._config.nodes[cur_node].input_schema
         return list(input_schema.keys())
 
-    def current_has_internal_upstreams(self) -> bool:
-        """Checks if the current node has internal upstreams."""
-        return has_internal_upstreams(self.get_current_upstreams())
+    def has_input_message_in_current_upstreams(self) -> bool:
+        return INTERNAL_UPSTREAM_INPUT_MESSAGE in self.get_current_upstreams()
 
     def get_node_downstreams(self, node: str) -> list[str]:
         """Returns the downstream nodes for a given node."""
@@ -74,7 +73,7 @@ class WorkflowRunner:
             [user, assistant]
         )
 
-    def process_message(self, *args: Any, **kwargs: Any) -> tuple[str, Any]:
+    def run(self, *args: Any, **kwargs: Any) -> tuple[str, Any]:
         cur_node = self.get_current_node()
         events = self._graph.stream(self._ic, stream_mode="values")
         for event in events:
@@ -105,6 +104,7 @@ class WorkflowRunner:
                 downstreams = self.get_node_downstreams(cur_node)
                 next_downstream = downstreams[0]
                 self._ic.current_node = next_downstream
+                logger.info("move to next", next_downstream=next_downstream)
         elif output_state.output_type == "LOOP_MESSAGE_FALSE":
             # output loop message
             result = (cur_node, output_state.loop_message)

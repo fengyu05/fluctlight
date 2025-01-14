@@ -98,11 +98,6 @@ class WorkflowInvocationState(BaseModel):
     output_state: dict[str, WorkflowNodeOutput] = {}
 
 
-def has_internal_upstreams(upstreams: list[str]) -> bool:
-    """Check if the current node has internal upstreams."""
-    return INTERNAL_UPSTREAM_INPUT_MESSAGE in upstreams
-
-
 def is_internal_upstream(upstream: str) -> bool:
     """Check if the given upstream is an internal upstream."""
     return upstream in [
