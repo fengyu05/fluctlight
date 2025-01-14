@@ -5,6 +5,7 @@ include makefiles/poetry.mk
 include makefiles/alembic.mk
 
 DB_APP=api
+CI_DOCKER_COMPOSE_FILE=docker-compose.yml
 
 install: ## Install the dev environment(mainly for local development)
 	git submodule update --init --recursive  # ensure submodule is pull to latest

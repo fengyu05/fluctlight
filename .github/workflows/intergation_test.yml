@@ -42,4 +42,4 @@ jobs:
           echo "APP_NAME=GA_TEST" >> .env
 
       - name: Build and run test containers
-        run: docker compose -f docker-compose-ci.yml run --rm test-int
+        run: docker compose run --rm test-int
