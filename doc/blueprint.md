@@ -37,7 +37,7 @@
 
 ## Monitoring and Evaluation
 
-![Evaluation Metrics](./design/eval.png)
+![Evaluation Metrics](./design/evaluation.png)
 
 ### Performance Metrics
 - **Accuracy**: Measure the scenarios correctness.
