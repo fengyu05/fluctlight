@@ -25,7 +25,9 @@ class TestWorkflowConfig(unittest.TestCase):
                 "input2": "str",
             },
             "output_schema": "tests.agents.expert.test_task_workflow_config.SomeEntityB",
-            "success_criteria": "Test criteria",
+            "validation_config": {
+                "success_criteria": "Test criteria",
+            },
         }
 
     @patch(
@@ -51,7 +53,9 @@ class TestWorkflowConfig(unittest.TestCase):
     def test_load_from_config(self) -> None:
         config = WorkflowNodeConfig.load_from_config(self.config_dict)
         self.assertEqual(config.instruction, "Test instruction")
-        self.assertEqual(config.success_criteria, "Test criteria")
+        self.assertEqual(config.validation_config.success_criteria, "Test criteria")
+        self.assertEqual(config.validation_config.failed_message, None)
+        self.assertEqual(config.validation_config.passed_message, None)
         self.assertIsNotNone(config.input_schema)
         self.assertIsNotNone(config.output_schema)
 
