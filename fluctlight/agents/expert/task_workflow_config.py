@@ -2,7 +2,7 @@ from typing import Any, Literal, Type
 
 from pydantic import BaseModel
 from fluctlight.logger import get_logger
-from fluctlight.agents.expert.data_model import TaskEntity
+from fluctlight.agents.expert.data_model import TaskEntity, TaskNodeValidation
 
 logger = get_logger(__name__)
 
@@ -28,22 +28,11 @@ type_aliases: dict[str, str] = {
 }
 
 
-class WorkflowNodeLoopMessage(BaseModel):
-    mode: Literal["text"]
-    message: str
-
-
-class WorkflowNodeLLMResponse(BaseModel):
-    instruction: str
-
-
 class WorkflowNodeConfig(BaseModel):
     instruction: str
     input_schema: dict[str, Type[WorkflowSchemaType]]
     output_schema: Type[WorkflowSchemaType]
-    loop_message: WorkflowNodeLoopMessage | None = None
-    success_criteria: str | None = None  # TODO: move into WorkflowNodeLoopMessage
-    llm_response: WorkflowNodeLLMResponse | None = None
+    validation_config: TaskNodeValidation | None = None
 
     @classmethod
     def _load_input_schema(
@@ -71,13 +60,13 @@ class WorkflowNodeConfig(BaseModel):
     @classmethod
     def load_from_config(cls, config: dict[str, Any]) -> "WorkflowNodeConfig":
         """Load WorkflowNodeConfig from a dictionary configuration."""
+
+        validation_config = config.get("validation_config", {})
         return WorkflowNodeConfig(
             instruction=config["instruction"],
             input_schema=cls._load_input_schema(config["input_schema"]),
             output_schema=cls._load_type(config["output_schema"]),
-            loop_message=None,  # TODO
-            success_criteria=config.get("success_criteria"),
-            llm_response=None,  # TODO
+            validation_config=TaskNodeValidation(**validation_config),
         )
 
 
@@ -88,14 +77,15 @@ class WorkflowConfig(BaseModel):
 
 
 class WorkflowNodeOutput(BaseModel):
-    output_type: Literal["SUCCESS", "LOOP_MESSAGE_TRUE", "LOOP_MESSAGE_FALSE"]
-    loop_message: str | None = None
+    node: str
+    status: Literal["SUCCESS", "LOOP_MESSAGE_CHECK_PASSED", "LOOP_MESSAGE_CHECK_FAILED"]
+    message: str | None = None
 
 
 class WorkflowInvocationState(BaseModel):
     current_node: str
     running_state: dict[str, Any] = {}
-    output_state: dict[str, WorkflowNodeOutput] = {}
+    output: dict[str, WorkflowNodeOutput] = {}
 
 
 def is_internal_upstream(upstream: str) -> bool:

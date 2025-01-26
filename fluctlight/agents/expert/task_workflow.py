@@ -18,6 +18,9 @@ from fluctlight.agents.expert.task_workflow_config import (
 )
 from fluctlight.open import OPENAI_CLIENT
 
+_DEFAULT_PASSED_MSG = "You request has been processed successfully."
+_DEFAULT_FAILED_MSG = "You request is invalid, please try again."
+
 
 @traceable(run_type="llm")
 def chat_completion(
@@ -34,7 +37,7 @@ def chat_completion(
     return completion
 
 
-def create_workflow_node(
+def create_task_node(
     name: str,
     config: WorkflowNodeConfig,
 ) -> Callable[[WorkflowInvocationState], WorkflowInvocationState]:
@@ -80,7 +83,11 @@ def create_workflow_node(
                 structured_content, str
             ):
                 new_state.running_state[name] = structured_content
-                new_state.output_state[name] = WorkflowNodeOutput(output_type="SUCCESS")
+                new_state.output[name] = WorkflowNodeOutput(
+                    node=name,
+                    status="SUCCESS",
+                    message=None,
+                )
             else:
                 raise ValueError(f"Output type not match, {structured_content}")
 
@@ -89,40 +96,34 @@ def create_workflow_node(
     return node_fn
 
 
-def create_workflow_loop_output_node(
+def create_task_validation_node(
     name: str,
     config: WorkflowNodeConfig,
     success: bool,
 ) -> Callable[[WorkflowInvocationState], WorkflowInvocationState]:
-    mode = "text"
-    if config.loop_message:
-        mode = config.loop_message.mode
-        loop_message = config.loop_message.message
-    else:
-        loop_message = ""
+    """Create a workflow node function for loop output valiation nodes."""
 
     def node_fn(state: WorkflowInvocationState) -> WorkflowInvocationState:
-        running_state = state.running_state
-        template = Template(loop_message)
-        text = template.render(running_state)
-
-        if mode == "text":
-            pass
-        elif mode == "llm":
-            # TODO: text is llm instruction
-            pass
+        passed_template = Template(
+            config.validation_config.passed_message or _DEFAULT_PASSED_MSG
+        )
+        failed_template = Template(
+            config.validation_config.failed_message or _DEFAULT_FAILED_MSG
+        )
 
         new_state = state.model_copy()
         if success:
-            new_state.output_state[name] = WorkflowNodeOutput(
-                output_type="LOOP_MESSAGE_TRUE",
+            new_state.output[name] = WorkflowNodeOutput(
+                node=name,
+                status="LOOP_MESSAGE_CHECK_PASSED",
+                message=passed_template.render(state.running_state),
             )
         else:
-            new_state.output_state[name] = WorkflowNodeOutput(
-                output_type="LOOP_MESSAGE_FALSE",
-                loop_message=text,
+            new_state.output[name] = WorkflowNodeOutput(
+                node=name,
+                status="LOOP_MESSAGE_CHECK_FAILED",
+                message=failed_template.render(state.running_state),
             )
-
         return new_state
 
     return node_fn
@@ -143,7 +144,7 @@ def create_conditional_edge_chain(
     name: str,
     node_config: WorkflowNodeConfig,
 ) -> Callable[[WorkflowInvocationState], str]:
-    success_criteria: str = node_config.success_criteria or ""
+    success_criteria: str = node_config.validation_config.success_criteria or ""
 
     def node_conditional_edge(state: WorkflowInvocationState) -> str:
         context = state.running_state
@@ -195,7 +196,7 @@ def build_workflow_graph(config: WorkflowConfig) -> CompiledStateGraph:
     # Build and add nodes
     for k, v in config.nodes.items():
         workflow_node_route_table[k] = k
-        workflow.add_node(k, create_workflow_node(k, v))
+        workflow.add_node(k, create_task_node(k, v))
 
     # Add START -> node router
     workflow.add_conditional_edges(
@@ -204,13 +205,13 @@ def build_workflow_graph(config: WorkflowConfig) -> CompiledStateGraph:
 
     # Add edges
     for k, v in config.nodes.items():
-        if v.success_criteria:
+        if v.validation_config:
             # Add loop output nodes
             workflow.add_node(
-                k + "_LOOP_OUTPUT_TRUE", create_workflow_loop_output_node(k, v, True)
+                k + "_LOOP_OUTPUT_TRUE", create_task_validation_node(k, v, True)
             )
             workflow.add_node(
-                k + "_LOOP_OUTPUT_FALSE", create_workflow_loop_output_node(k, v, False)
+                k + "_LOOP_OUTPUT_FALSE", create_task_validation_node(k, v, False)
             )
             workflow.add_edge(k + "_LOOP_OUTPUT_TRUE", END)
             workflow.add_edge(k + "_LOOP_OUTPUT_FALSE", END)

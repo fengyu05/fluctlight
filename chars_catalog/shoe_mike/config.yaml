@@ -114,15 +114,16 @@ task_config:
           __INPUT_MESSAGE: IntakeMessage
           __HISTORY_MESSAGES: IntakeHistoryMessage
         output_schema: ProductMatch
-        success_criteria: |
-          Determine whether the product information described below is consistent with the data defined by the inventory.
-          If it is consistent, return True; otherwise, return False.
+        validation_config:
+          success_criteria: |
+            Determine whether the product information described below is consistent with the data defined by the inventory.
+            If it is consistent, return True; otherwise, return False.
 
-          Product:
-          {{product_interests.product}}
+            Product:
+            {{product_interests.product}}
 
-          Inventory:
-          {{inventory.all_product_desc}}
+            Inventory:
+            {{inventory.all_product_desc}}
       product_specs:
         instruction: |
           You seems to be interested in {{product_interests.product.product_id_and_name}}.

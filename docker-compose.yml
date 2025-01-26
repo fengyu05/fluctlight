@@ -109,6 +109,8 @@ services:
       - INTENT_LLM_MATCHING=true
       - INTENT_CHAR_MATCHING=false
       - TEST_MODE=true
+      - OPENAI_API_KEY=ensure_no_key
+      - FIREWORKS_API_KEY=ensure_no_key
     command: ["./run_tests.sh", "${TEST_FILES:-}"]
 
   test-int:

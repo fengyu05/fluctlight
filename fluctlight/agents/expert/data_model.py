@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Type
 
 from pydantic import BaseModel
 
@@ -41,13 +41,19 @@ class IntakeHistoryMessage(TaskEntity):
         return "\n".join(self.messages)
 
 
+class TaskNodeValidation(BaseModel):
+    success_criteria: str
+    failed_message: str | None = None
+    passed_message: str | None = None
+
+
 class TaskConfig(BaseModel):
+    """Task configuration for legacy workflow node"""
+
     task_key: str
     instruction: str
     input_schema: dict[str, Type[TaskEntity]]  # map from input name to input type
-    output_schema: Union[Type[str], Type[TaskEntity]]
-    success_criteria: Optional[Callable] = None
-    loop_message: Optional[str] = None
+    output_schema: Type[str] | Type[TaskEntity]  # output type
 
     def __repr__(self) -> str:
         field_strings = [f"{key}: {value}" for key, value in self.model_dump().items()]

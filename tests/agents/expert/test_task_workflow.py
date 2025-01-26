@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from fluctlight.agents.expert.task_workflow import (
-    create_workflow_node,
-    create_workflow_loop_output_node,
+    create_task_node,
+    create_task_validation_node,
     workflow_node_router,
     create_conditional_edge_chain,
     build_workflow_graph,
@@ -11,7 +11,7 @@ from fluctlight.agents.expert.task_workflow import (
     ConditionalOutput,
 )
 from fluctlight.agents.expert.task_workflow_config import WorkflowConfig
-from fluctlight.agents.expert.data_model import TaskEntity
+from fluctlight.agents.expert.data_model import TaskEntity, TaskNodeValidation
 
 
 class SomeEntity(TaskEntity):
@@ -23,20 +23,23 @@ class AnotherEntity(TaskEntity):
 
 
 class TestTaskWorkflow(unittest.TestCase):
-    def test_create_workflow_node(self) -> None:
+    @patch("fluctlight.agents.expert.task_workflow.chat_completion")
+    def test_create_workflow_node(self, mock_chat_completion: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.choices[0].message.parsed = SomeEntity(value="Test")
+        mock_chat_completion.return_value = mock_response
+
         config = WorkflowNodeConfig(
             instruction="Test instruction",
             output_schema=SomeEntity,
-            success_criteria=None,
-            loop_message=None,
             input_schema={},
         )
         state = WorkflowInvocationState(
             running_state={},
-            output_state={},
+            output={},
             current_node="",
         )
-        node_fn = create_workflow_node("test_node", config)
+        node_fn = create_task_node("test_node", config)
         new_state = node_fn(state)
         self.assertIn("test_node", new_state.running_state)
 
@@ -44,32 +47,33 @@ class TestTaskWorkflow(unittest.TestCase):
         config = WorkflowNodeConfig(
             instruction="Test instruction",
             output_schema=str,
-            success_criteria=None,
-            loop_message=None,
             input_schema={},
+            validation_config=TaskNodeValidation(success_criteria="Test criteria"),
         )
         state = WorkflowInvocationState(
             running_state={},
-            output_state={},
+            output={},
             current_node="",
         )
-        loop_fn = create_workflow_loop_output_node("test_node", config, True)
+        loop_fn = create_task_validation_node("test_node", config, True)
         new_state = loop_fn(state)
         self.assertEqual(
-            new_state.output_state["test_node"].output_type, "LOOP_MESSAGE_TRUE"
+            new_state.output["test_node"].status, "LOOP_MESSAGE_CHECK_PASSED"
         )
 
     def test_workflow_node_router(self) -> None:
         state = WorkflowInvocationState(
             running_state={},
-            output_state={},
+            output={},
             current_node="test_node",
         )
         result = workflow_node_router(state)
         self.assertEqual(result, "test_node")
 
     @patch("fluctlight.agents.expert.task_workflow.chat_completion")
-    def test_create_conditional_edge_chain(self, mock_chat_completion) -> None:
+    def test_create_conditional_edge_chain(
+        self, mock_chat_completion: MagicMock
+    ) -> None:
         mock_response = MagicMock()
         mock_response.choices[0].message.parsed = ConditionalOutput(
             is_match_success_criteria=True
@@ -79,13 +83,12 @@ class TestTaskWorkflow(unittest.TestCase):
         config = WorkflowNodeConfig(
             instruction="Test instruction",
             output_schema=SomeEntity,
-            success_criteria="Test criteria",
-            loop_message=None,
             input_schema={},
+            validation_config=TaskNodeValidation(success_criteria="Test criteria"),
         )
         state = WorkflowInvocationState(
             running_state={},
-            output_state={},
+            output={},
             current_node="",
         )
         edge_fn = create_conditional_edge_chain("test_node", config)
@@ -98,15 +101,13 @@ class TestTaskWorkflow(unittest.TestCase):
                 "node1": WorkflowNodeConfig(
                     instruction="Test instruction",
                     output_schema=SomeEntity,
-                    success_criteria=None,
-                    loop_message=None,
+                    validation_config=None,
                     input_schema={},
                 ),
                 "node2": WorkflowNodeConfig(
                     instruction="Test instruction",
                     output_schema=AnotherEntity,
-                    success_criteria=None,
-                    loop_message=None,
+                    validation_config=None,
                     input_schema={"node1": SomeEntity},
                 ),
             },

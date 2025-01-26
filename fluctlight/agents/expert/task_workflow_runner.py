@@ -1,6 +1,7 @@
 from typing import Any
 from fluctlight.agents.expert.data_model import (
     IntakeHistoryMessage,
+    IntakeMessage,
 )
 from fluctlight.agents.expert.task_workflow_config import (
     INTERNAL_UPSTREAM_INPUT_MESSAGE,
@@ -8,7 +9,9 @@ from fluctlight.agents.expert.task_workflow_config import (
     WorkflowNodeOutput,
     WorkflowInvocationState,
     WorkflowConfig,
+    is_internal_upstream,
 )
+
 from fluctlight.agents.expert.task_workflow import build_workflow_graph
 from fluctlight.logger import get_logger
 
@@ -73,7 +76,25 @@ class WorkflowRunner:
             [user, assistant]
         )
 
-    def run(self, *args: Any, **kwargs: Any) -> tuple[str, Any]:
+    def process_workflow_upstream_input(self, message_text: str):
+        upstreams = self.get_current_upstreams()
+        for upstream in upstreams:
+            if not is_internal_upstream(upstream):
+                continue
+            if upstream == INTERNAL_UPSTREAM_INPUT_MESSAGE:
+                self.update_running_state(
+                    {
+                        INTERNAL_UPSTREAM_INPUT_MESSAGE: IntakeMessage(
+                            text=message_text,
+                        )
+                    }
+                )
+            elif upstream == INTERNAL_UPSTREAM_HISTORY_MESSAGES:
+                pass
+
+    def run(self, message_text: str) -> WorkflowNodeOutput:
+        self.process_workflow_upstream_input(message_text)
+
         cur_node = self.get_current_node()
         events = self._graph.stream(self._ic, stream_mode="values")
         for event in events:
@@ -83,32 +104,27 @@ class WorkflowRunner:
         last_state = WorkflowInvocationState(
             current_node=last_event["current_node"],
             running_state=last_event["running_state"],
-            output_state=last_event["output_state"],
+            output=last_event["output"],
         )
-        output_value = last_state.running_state[cur_node]
-        output_state: WorkflowNodeOutput = last_state.output_state[cur_node]
-        result = (cur_node, output_value)
+        output_state = last_state.running_state[cur_node]
+        node_output: WorkflowNodeOutput = last_state.output[cur_node]
 
         # update state
-        self._ic.running_state[cur_node] = output_value
-        self._ic.output_state[cur_node] = output_state
-
+        self._ic.running_state[cur_node] = output_state
+        self._ic.output[cur_node] = node_output
         if (
-            output_state.output_type == "SUCCESS"
-            or output_state.output_type == "LOOP_MESSAGE_TRUE"
+            node_output.status == "SUCCESS"
+            or node_output.status == "LOOP_MESSAGE_CHECK_PASSED"
         ):
             # move to next step
             if cur_node == self._config.end:
                 self._ic.current_node = _END
+                logger.debug("move to END")
             else:
                 downstreams = self.get_node_downstreams(cur_node)
                 next_downstream = downstreams[0]
                 self._ic.current_node = next_downstream
-                logger.info("move to next", next_downstream=next_downstream)
-        elif output_state.output_type == "LOOP_MESSAGE_FALSE":
-            # output loop message
-            result = (cur_node, output_state.loop_message)
-        else:
-            raise ValueError(f"Unknow output type. {output_state}")
+                logger.debug("move to next", next_downstream=next_downstream)
 
-        return result
+        self.append_history_message(message_text, node_output.message)
+        return node_output

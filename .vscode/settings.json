@@ -8,5 +8,14 @@
             "group": "fluctlight",
             "connectString": "postgresql://postgres:postgres@localhost:5432/postgres"
         }
-    ]
+    ],
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "test_*.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true
 }

@@ -4,13 +4,12 @@ from fluctlight.agents.expert.data_model import (
     IntakeHistoryMessage,
     IntakeMessage,
     TaskEntity,
+    TaskNodeValidation,
 )
 from fluctlight.agents.expert.task_workflow_agent import TaskWorkflowAgent
 from fluctlight.agents.expert.task_workflow_config import (
     INTERNAL_UPSTREAM_HISTORY_MESSAGES,
     INTERNAL_UPSTREAM_INPUT_MESSAGE,
-    WorkflowNodeLLMResponse,
-    WorkflowNodeLoopMessage,
     WorkflowConfig,
     WorkflowNodeConfig,
 )
@@ -107,83 +106,98 @@ def create_inventory() -> Inventory:
 def guide_to_buy_product_config() -> WorkflowNodeConfig:
     return WorkflowNodeConfig(
         instruction="""Take user input message, identify the user's intent.
-If the intent is not buy shoe, then respond by guiding the user to buy shoe based on the inventory.
+        If the intent is not buy shoe, then respond by guiding the user to buy shoe based on the inventory.
 
-History messages:
-{{__HISTORY_MESSAGES.to_chat_history}}
+        History messages:
+        {{__HISTORY_MESSAGES.to_chat_history}}
 
-User query: {{__INPUT_MESSAGE.text}}
+        User query: {{__INPUT_MESSAGE.text}}
 
-Inventory:
-{{inventory.all_product_desc}}
-""",
+        Inventory:
+        {{inventory.all_product_desc}}
+        """,
         input_schema={
             INTERNAL_UPSTREAM_INPUT_MESSAGE: IntakeMessage,
             INTERNAL_UPSTREAM_HISTORY_MESSAGES: IntakeHistoryMessage,
         },
         output_schema=UserIntent,
-        loop_message=WorkflowNodeLoopMessage(
-            mode="text",
-            message="{{guide_to_buy_product.assistant_response_msg}}",
+        validation_config=TaskNodeValidation(
+            success_criteria="""Match user intention, if is buy shoe, return True, otherwise return False.
+UserIntent: {{guide_to_buy_product.user_intent}}""",
+            failed_message="{{guide_to_buy_product.assistant_response_msg}}",
+            passed_message="""Thanks for being interested in buying shoe. Please take a look at the inventory below.
+                {{inventory.all_product_desc}}
+            """,
         ),
-        success_criteria="""Match user intention, if is buy shoe, return True, otherwise return False.
-UserIntent: {{guide_to_buy_product.user_intent}}
-""",
     )
 
 
 def product_interests_config() -> WorkflowNodeConfig:
     return WorkflowNodeConfig(
         instruction="""Take users input, match with the below inventory.
-If the user does not mention information related to the products in the inventory, it should return false.
+        If the user does not mention information related to the products in the inventory, it should return false.
 
-User input:
-{{guide_to_buy_product.user_query}}
+        User input:
+        {{guide_to_buy_product.user_query}}
 
-Inventory:
-{{inventory.all_product_desc}}
-""",
+        Inventory:
+        {{inventory.all_product_desc}}
+        """,
         input_schema={
             INTERNAL_UPSTREAM_INPUT_MESSAGE: IntakeMessage,
             "guide_to_buy_product": UserIntent,
         },
         output_schema=ProductMatch,
-        loop_message=WorkflowNodeLoopMessage(
-            mode="text",
-            message="""Please select from the following inventory:
-{{inventory.all_product_desc}}
-""",
-        ),
-        success_criteria="""Determine whether the product information described below is consistent with the data defined by the inventory.
-If it is consistent, return True; otherwise, return False.
-
-Product:
-{{product_interests.product}}
-
-Inventory:
-{{inventory.all_product_desc}}
-""",
-        llm_response=WorkflowNodeLLMResponse(
-            instruction="""Based the product match, response to guide user to purchar the product.
-Product:
-{{product_interests.product}}
-""",
+        validation_config=TaskNodeValidation(
+            success_criteria="""Determine whether the product selected is in the inventory.
+            If it is yes, return True; otherwise, return False.
+            Product Selective:
+            {{product_interests.product}}
+            Inventory:
+            {{inventory.all_product_desc}}
+            """,
+            failed_message="""Please select from the following inventory:
+            {{inventory.all_product_desc}}
+            """,
+            passed_message="""Based the product match, response to guide user to purchar the product.
+            Product:
+            {{product_interests.product}}
+            """,
         ),
     )
 
 
-def product_specs_config() -> WorkflowNodeConfig:
+def product_order_config() -> WorkflowNodeConfig:
     return WorkflowNodeConfig(
-        instruction="""You seems to be interested in {{product_interests.product.product_id_and_name}}.
-The product has specs {{product_interests.product.all_spec_in_json}}.
+        instruction="""User are interested in {{product_interests.product.product_id_and_name}}.
+The product has specs {{product_interests.product.all_spec_in_json}}. Take user input and place the order.
 
-How do you want your order.
+User query: {{__INPUT_MESSAGE.text}}
 """,
         input_schema={
             INTERNAL_UPSTREAM_INPUT_MESSAGE: IntakeMessage,
             "product_interests": ProductMatch,
         },
         output_schema=Order,
+        validation_config=TaskNodeValidation(
+            success_criteria="""Determine whether the order is in the product spec described below.
+            If it is consistent, return True; otherwise, return False.
+
+            Order:
+            {{product_order.spec}}
+
+            Spec:
+            {{product_interests.product.all_spec_in_json}}.
+            """,
+            failed_message="""You are interested in {{product_interests.product.product_id_and_name}}.
+            The product has specs {{product_interests.product.all_spec_in_json}}.
+
+            What do you like?
+            """,
+            passed_message="""Here is your order.
+            {{product_order}}
+            """,
+        ),
     )
 
 
@@ -192,10 +206,10 @@ def create_shopping_assist_task_graph_agent() -> TaskWorkflowAgent:
         nodes={
             "guide_to_buy_product": guide_to_buy_product_config(),
             "product_interests": product_interests_config(),
-            "product_specs": product_specs_config(),
+            "product_order": product_order_config(),
         },
         begin="guide_to_buy_product",
-        end="product_specs",
+        end="product_order",
     )
 
     agent = TaskWorkflowAgent(
