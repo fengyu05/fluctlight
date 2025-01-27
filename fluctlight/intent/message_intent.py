@@ -54,6 +54,7 @@ DEFAULT_CHAT_INTENT = MessageIntent(key="CHAT", metadata={_METHOD: _DEFAULT})
 
 _EMOJI_INTENT_MAP = {
     "MIAO": ["cat"],
+    "REASON": ["reason", "think"],
     "SHOPPING_ASSIST": ["shop"],
 }
 

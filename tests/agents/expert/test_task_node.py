@@ -4,7 +4,7 @@ from unittest.mock import patch
 from fluctlight.agents.expert.data_model import IntakeMessage, TaskConfig, TaskEntity
 from fluctlight.agents.expert.task_node import TaskNode
 from fluctlight.constants import GTP_4O_WITH_STRUCT
-from fluctlight.settings import OPENAI_GPT_MODEL_ID
+from fluctlight.settings import GPT_DEFAULT_MODEL
 
 
 class Te1(TaskEntity):
@@ -21,7 +21,7 @@ class TestTaskNode(unittest.TestCase):
         self.intake_message = IntakeMessage(text=self.secret_word)
         return super().setUp()
 
-    @patch("fluctlight.agents.expert.task_node.simple_assistant_with_struct_ouput")
+    @patch("fluctlight.agents.expert.task_node.structure_simple_assistant")
     def test_process_with_root_struct_output(self, mock_assistant):
         config = TaskConfig(
             task_key="task1",
@@ -61,7 +61,7 @@ class TestTaskNode(unittest.TestCase):
 
         result = task_node(message=self.intake_message)
         mock_simple_assistant.assert_called_once_with(
-            model_id=OPENAI_GPT_MODEL_ID,
+            model_id=GPT_DEFAULT_MODEL,
             prompt=f"Test instruction: {self.secret_word}",
         )
         self.assertEqual(result, "Mocked structured response")
@@ -84,7 +84,7 @@ class TestTaskNode(unittest.TestCase):
         result = task_node(input1=input1, input2=input2)
 
         mock_simple_assistant.assert_called_once_with(
-            model_id=OPENAI_GPT_MODEL_ID,
+            model_id=GPT_DEFAULT_MODEL,
             prompt=f"Process data: {input1.value}, {input2.value}",
         )
         self.assertEqual(result, "Processed data")

@@ -6,9 +6,9 @@ from fluctlight.intent.intent_agent import IntentAgent
 from fluctlight.intent.intent_matcher_base import IntentMatcher
 from fluctlight.intent.message_intent import MessageIntent, create_intent
 from fluctlight.logger import get_logger
-from fluctlight.open.chat_utils import (
+from fluctlight.open.chat import (
     simple_assistant,
-    simple_assistant_with_struct_ouput,
+    structure_simple_assistant,
 )
 
 logger = get_logger(__name__)
@@ -29,7 +29,7 @@ class OpenAIIntentMatcher(IntentMatcher):
         if self.use_structure_output:
             prompt = self.match_intent_prompt_structure(message=text)
             logger.debug("LLM intent matching", prompt=prompt)
-            message_intent = simple_assistant_with_struct_ouput(
+            message_intent = structure_simple_assistant(
                 model_id=GPT_4O_MINI, prompt=prompt, output_schema=MessageIntent
             )
         else:

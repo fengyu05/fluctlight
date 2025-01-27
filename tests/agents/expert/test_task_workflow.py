@@ -23,7 +23,7 @@ class AnotherEntity(TaskEntity):
 
 
 class TestTaskWorkflow(unittest.TestCase):
-    @patch("fluctlight.agents.expert.task_workflow.chat_completion")
+    @patch("fluctlight.agents.expert.task_workflow.structure_chat_completion")
     def test_create_workflow_node(self, mock_chat_completion: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.choices[0].message.parsed = SomeEntity(value="Test")
@@ -70,7 +70,7 @@ class TestTaskWorkflow(unittest.TestCase):
         result = workflow_node_router(state)
         self.assertEqual(result, "test_node")
 
-    @patch("fluctlight.agents.expert.task_workflow.chat_completion")
+    @patch("fluctlight.agents.expert.task_workflow.structure_chat_completion")
     def test_create_conditional_edge_chain(
         self, mock_chat_completion: MagicMock
     ) -> None:
