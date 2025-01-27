@@ -3,7 +3,7 @@ from slack_sdk.errors import SlackApiError
 
 from fluctlight.agents.character import create_default_character_agent
 from fluctlight.agents.message_intent_agent import MessageIntentAgent
-from fluctlight.agents.openai_chat_agent import OpenAiChatAgent
+from fluctlight.agents.openai_chat_agent import OpenAiChatAgent, create_reason_agent
 from fluctlight.core.bot_proxy import BotProxy
 from fluctlight.data_model.slack import MessageEvent
 from fluctlight.intent.intent_matcher_base import IntentMatcher
@@ -38,6 +38,7 @@ class SlackBotProxy(BotProxy, MessagesFetcher, SlackChat, SlackReaction, Singlet
         self.agents = [
             create_default_character_agent(),
             self.chat_agent,
+            create_reason_agent(),  # Reasoning agent
             create_shopping_assist_task_graph_agent(),
         ]
         self.intent_matcher = get_default_intent_matcher(self.agents)

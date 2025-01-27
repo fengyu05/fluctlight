@@ -1,36 +1,27 @@
 from collections import OrderedDict
 from typing import Any, Callable
 
-from langsmith import traceable
-from openai.types.chat import ChatCompletion
-
 import fluctlight.agents.prompt_bank as prompt_bank
 from fluctlight.agents.message_intent_agent import MessageIntentAgent
 from fluctlight.audio.speech_to_text import get_speech_to_text
 from fluctlight.data_model.interface import IAttachment, IMessage
 from fluctlight.intent.message_intent import MessageIntent, create_intent
 from fluctlight.logger import get_logger
-from fluctlight.open import OPENAI_CLIENT
-from fluctlight.open.chat_utils import get_message_from_completion
+from fluctlight.open.chat import get_message_from_completion
 from fluctlight.open.common import AUDIO_INPUT_SUPPORT_TYPE, VISION_INPUT_SUPPORT_TYPE
 from fluctlight.settings import (
-    OPENAI_CHATBOT_MODEL_ID,
+    GPT_CHAT_MODEL,
     SLACK_APP_OAUTH_TOKENS_FOR_WS,
     is_slack_bot,
 )
-from fluctlight.constants import GPT_4O
+from fluctlight.constants import GPT_4O, DEEPSEEK_REASON
 from fluctlight.utt.files import base64_encode_media, download_media
+from fluctlight.open.chat import chat_complete
 
 logger = get_logger(__name__)
 
-# For override
-_OPENAI_CHATBOT_MODEL_ID = OPENAI_CHATBOT_MODEL_ID
 
-
-_AGENT_DESCRIPTION = """ Use this agent to make a natural converastion between the assistant bot and user.
-
-"""
-
+_AGENT_DESCRIPTION = """ Use this agent to make a natural converastion between the assistant bot and user."""
 INTENT_KEY = "CHAT"
 
 
@@ -45,13 +36,16 @@ class OpenAiChatAgent(MessageIntentAgent):
         self,
         transcribe_slack_audio: Callable[[str, str], str] = None,
         buffer_limit: int = 20,
+        chatbot_model_id: str = GPT_CHAT_MODEL,
+        intent_key: str = INTENT_KEY,
     ) -> None:
-        super().__init__(intent=create_intent(INTENT_KEY))
+        super().__init__(intent=create_intent(intent_key))
         self.message_buffer = OrderedDict()
         self.buffer_limit = buffer_limit
         self.transcribe_slack_audio = transcribe_slack_audio
         self.speech_to_text = get_speech_to_text()
         self.bearer_token = SLACK_APP_OAUTH_TOKENS_FOR_WS if is_slack_bot() else None
+        self.chatbot_model_id = chatbot_model_id
 
     @property
     def name(self) -> str:
@@ -61,8 +55,12 @@ class OpenAiChatAgent(MessageIntentAgent):
     def description(self) -> str:
         return _AGENT_DESCRIPTION
 
-    def get_system_role(self) -> str:
-        return "developer"
+    def get_system_role(self, model_id: str) -> str:
+        if model_id.startswith("o1") or model_id.startswith("o3"):
+            return "developer"
+        else:
+            # deepseek model, etc
+            return "system"
 
     def process_message(
         self, message: IMessage, message_intent: MessageIntent
@@ -81,10 +79,10 @@ class OpenAiChatAgent(MessageIntentAgent):
             self.message_buffer.move_to_end(thread_id)
         else:
             self.message_buffer[thread_id] = []
-            if not _OPENAI_CHATBOT_MODEL_ID.startswith("o1"):
+            if not self.chatbot_model_id.startswith("o1"):
                 self.message_buffer[thread_id].append(
                     {
-                        "role": self.get_system_role(),
+                        "role": self.get_system_role(self.chatbot_model_id),
                         "content": prompt_bank.CONVERSATION_BOT_1,
                     }
                 )
@@ -103,8 +101,16 @@ class OpenAiChatAgent(MessageIntentAgent):
                 "content": content,
             }
         )
-        response = self.chat_complete(
-            messages=self.message_buffer[thread_id],
+        model_id = self.chatbot_model_id
+        for message in self.message_buffer[thread_id]:
+            if message["role"] == "user" and self.has_image_in_content(
+                message["content"]
+            ):
+                model_id = GPT_4O
+                break
+
+        response = chat_complete(
+            messages=self.message_buffer[thread_id], model_id=model_id
         )
         logger.info("response", response=response)
         output_text = get_message_from_completion(response)
@@ -115,24 +121,6 @@ class OpenAiChatAgent(MessageIntentAgent):
             }
         )
         return [output_text]
-
-    @traceable(run_type="llm", name="chat_agent")
-    def chat_complete(
-        self,
-        messages: list[dict[str, Any]],
-        model_id: str = _OPENAI_CHATBOT_MODEL_ID,
-    ) -> ChatCompletion:
-        logger.info("chat_complete", messages=messages)
-        for message in messages:
-            if message["role"] == "user" and self.has_image_in_content(
-                message["content"]
-            ):
-                model_id = GPT_4O
-                break
-        return OPENAI_CLIENT.chat.completions.create(
-            model=model_id,
-            messages=messages,
-        )
 
     def has_image_in_content(self, content: list[dict[str, Any]]) -> bool:
         for item in content:
@@ -212,3 +200,10 @@ class OpenAiChatAgent(MessageIntentAgent):
                     elif content_item["type"] == "image_url":
                         output.append(f'[{item["role"]}]: attach an image')
         return output
+
+
+def create_reason_agent() -> OpenAiChatAgent:
+    return OpenAiChatAgent(
+        chatbot_model_id=DEEPSEEK_REASON,
+        intent_key="REASON",
+    )

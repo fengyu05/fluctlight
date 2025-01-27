@@ -1,14 +1,11 @@
-from typing import Any, Callable, Hashable, Type, cast
+from typing import Callable, Hashable, cast
 
 from jinja2 import Template
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from langsmith import traceable
-from openai.types.chat import ParsedChatCompletion
-from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
+
 from pydantic import BaseModel
-from fluctlight.settings import OPENAI_WORKFLOW_STRUCTURE_MODEL_ID
 from fluctlight.agents.expert.data_model import TaskEntity
 from fluctlight.agents.expert.task_workflow_config import (
     WorkflowConfig,
@@ -16,25 +13,11 @@ from fluctlight.agents.expert.task_workflow_config import (
     WorkflowNodeOutput,
     WorkflowInvocationState,
 )
-from fluctlight.open import OPENAI_CLIENT
+from fluctlight.open.chat import structure_chat_completion
+
 
 _DEFAULT_PASSED_MSG = "You request has been processed successfully."
 _DEFAULT_FAILED_MSG = "You request is invalid, please try again."
-
-
-@traceable(run_type="llm")
-def chat_completion(
-    output_schema: Type[Any],
-    messages: list[ChatCompletionMessageParam],
-    model_id: str = OPENAI_WORKFLOW_STRUCTURE_MODEL_ID,
-) -> ParsedChatCompletion:
-    completion = OPENAI_CLIENT.beta.chat.completions.parse(
-        temperature=0,
-        model=model_id,
-        messages=messages,
-        response_format=output_schema,
-    )
-    return completion
 
 
 def create_task_node(
@@ -72,7 +55,7 @@ def create_task_node(
         ]
 
         # LLM structured output
-        response = chat_completion(config.output_schema, messages)
+        response = structure_chat_completion(config.output_schema, messages)
         structured_content = response.choices[0].message.parsed
 
         new_state = state.model_copy()
@@ -161,7 +144,7 @@ def create_conditional_edge_chain(
 
         result = "NO"
 
-        response = chat_completion(ConditionalOutput, messages)
+        response = structure_chat_completion(ConditionalOutput, messages)
         structured_content = response.choices[0].message.parsed
         if isinstance(structured_content, ConditionalOutput):
             if cast(ConditionalOutput, structured_content).is_match_success_criteria:

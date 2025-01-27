@@ -43,14 +43,23 @@ DISCORD_BOT_ACCESS_MODE = config_default(
 # OPENAI API KEY
 OPENAI_API_KEY = config_default("OPENAI_API_KEY")
 
-# OPENAI GPT MODEL ID
-OPENAI_GPT_MODEL_ID = config_default("OPENAI_GPT_MODEL_ID", C.GPT_4O)  # Default model
-OPENAI_CHATBOT_MODEL_ID = config_default(
-    "OPENAI_CHATBOT_MODEL_ID", C.GPT_O1_MINI
-)  # Use for chat
-OPENAI_WORKFLOW_STRUCTURE_MODEL_ID = config_default(
-    "OPENAI_CHATBOT_MODEL_ID", C.GPT_4O_MINI
-)  # Use for agent workflow
+# DEEPSEEK API KEY
+DEEPSEEK_API_KEY = config_default("DEEPSEEK_API_KEY")
+DEEPSEEK_BASE_URL = config_default("DEEPSEEK_BASE_URL")
+
+# GPT MODEL IDs
+
+## Default model
+GPT_DEFAULT_MODEL = config_default("GPT_DEFAULT_MODEL", C.GPT_4O)
+
+## Use for agent workflow
+GPT_STRUCTURE_OUTPUT_MODEL = config_default("GPT_STRUCTURE_OUTPUT_MODEL", C.GPT_4O_MINI)
+
+## Use for chat
+GPT_CHAT_MODEL = config_default("GPT_CHAT_MODEL", C.GPT_O1_MINI)
+
+## Use for reason
+GPT_REASON_MODEL = config_default("GPT_REASON_MODEL", C.DEEPSEEK_REASON)
 
 # FIREWORKS API KEY, alt to OpenAI
 FIREWORKS_API_KEY = config_default("FIREWORKS_API_KEY")

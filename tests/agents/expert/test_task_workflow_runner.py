@@ -81,7 +81,7 @@ class TestWorkflowRunner(unittest.TestCase):
             ["user message", "assistant message"],
         )
 
-    @patch("fluctlight.agents.expert.task_workflow.chat_completion")
+    @patch("fluctlight.agents.expert.task_workflow.structure_chat_completion")
     def test_process_message_no_validation(
         self, mock_chat_completion: MagicMock
     ) -> None:
@@ -102,7 +102,7 @@ class TestWorkflowRunner(unittest.TestCase):
         )
         self.assertEqual(self.runner.get_current_node(), "task_b")
 
-    @patch("fluctlight.agents.expert.task_workflow.chat_completion")
+    @patch("fluctlight.agents.expert.task_workflow.structure_chat_completion")
     def test_process_message_with_validation(
         self, mock_chat_completion: MagicMock
     ) -> None:
@@ -152,7 +152,7 @@ class TestWorkflowRunner(unittest.TestCase):
         )
         self.assertEqual(self.runner.get_current_node(), "END")
 
-    @patch("fluctlight.agents.expert.task_workflow.chat_completion")
+    @patch("fluctlight.agents.expert.task_workflow.structure_chat_completion")
     def test_process_message_with_validation_fail(
         self, mock_chat_completion: MagicMock
     ) -> None:
