@@ -6,10 +6,6 @@ GPT_O1 = "o1"
 GPT_O1_MINI = "o1-mini"
 
 
-# DEEPSEEK models
-DEEPSEEK_CHAT = "deepseek-chat"
-DEEPSEEK_REASON = "deepseek-reasoner"
-
 # FIREWORDS MODEL
 FIREWORKS_MIXTRAL_22B = "accounts/fireworks/models/mixtral-8x22b-instruct"
 FIREWORKS_MIXTRAL_7B = "accounts/fireworks/models/mixtral-8x7b-instruct"

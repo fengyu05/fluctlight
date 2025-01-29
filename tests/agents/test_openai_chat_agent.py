@@ -97,6 +97,7 @@ class TestOpenAiChatAgent(unittest.TestCase):
         self.assertIn(MESSAGE_HELLO_WORLD.thread_message_id, agent.message_buffer)
         mock_chat_complete.assert_called_once()
 
+    @unittest.skip("Deepseek api is not stable")
     @skip_integration_tests
     def test_reason_agent_process_messsage(self):
         agent = create_reason_agent()
