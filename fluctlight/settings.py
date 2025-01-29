@@ -43,17 +43,13 @@ DISCORD_BOT_ACCESS_MODE = config_default(
 # OPENAI API KEY
 OPENAI_API_KEY = config_default("OPENAI_API_KEY")
 
-# DEEPSEEK API KEY
-DEEPSEEK_API_KEY = config_default("DEEPSEEK_API_KEY")
-DEEPSEEK_BASE_URL = config_default("DEEPSEEK_BASE_URL")
-
 # GPT MODEL IDs
 
 ## Default model
 GPT_DEFAULT_MODEL = config_default("GPT_DEFAULT_MODEL", C.GPT_4O)
 
 ## Use for agent workflow
-GPT_STRUCTURE_OUTPUT_MODEL = config_default("GPT_STRUCTURE_OUTPUT_MODEL", C.GPT_4O_MINI)
+GPT_STRUCTURE_OUTPUT_MODEL = config_default("GPT_STRUCTURE_OUTPUT_MODEL", C.GPT_4O)
 
 ## Use for chat
 GPT_CHAT_MODEL = config_default("GPT_CHAT_MODEL", C.GPT_O1_MINI)

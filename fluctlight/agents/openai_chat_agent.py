@@ -110,7 +110,7 @@ class OpenAiChatAgent(MessageIntentAgent):
                 break
 
         response = chat_complete(
-            messages=self.message_buffer[thread_id], model_id=model_id
+            messages=self.message_buffer[thread_id], model_key=model_id
         )
         logger.info("response", response=response)
         output_text = get_message_from_completion(response)
@@ -204,6 +204,6 @@ class OpenAiChatAgent(MessageIntentAgent):
 
 def create_reason_agent() -> OpenAiChatAgent:
     return OpenAiChatAgent(
-        chatbot_model_id=DEEPSEEK_REASON,
+        chatbot_model_id=f"DEEPSEEK:{DEEPSEEK_REASON}",
         intent_key="REASON",
     )
