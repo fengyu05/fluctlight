@@ -51,6 +51,8 @@ def chat_complete(
     else:
         client = get_alt_client_from_model_key(model_key)
 
+    if model_id in ["o1", "o1-mini"]:
+        temperature = 1
     return client.chat.completions.create(
         temperature=temperature,
         model=model_id,

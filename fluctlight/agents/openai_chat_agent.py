@@ -11,10 +11,11 @@ from fluctlight.open.chat import get_message_from_completion
 from fluctlight.open.common import AUDIO_INPUT_SUPPORT_TYPE, VISION_INPUT_SUPPORT_TYPE
 from fluctlight.settings import (
     GPT_CHAT_MODEL,
+    GPT_REASON_MODEL,
     SLACK_APP_OAUTH_TOKENS_FOR_WS,
     is_slack_bot,
 )
-from fluctlight.constants import GPT_4O, DEEPSEEK_REASON
+from fluctlight.constants import GPT_4O
 from fluctlight.utt.files import base64_encode_media, download_media
 from fluctlight.open.chat import chat_complete
 
@@ -204,6 +205,6 @@ class OpenAiChatAgent(MessageIntentAgent):
 
 def create_reason_agent() -> OpenAiChatAgent:
     return OpenAiChatAgent(
-        chatbot_model_id=f"DEEPSEEK:{DEEPSEEK_REASON}",
+        chatbot_model_id=GPT_REASON_MODEL,
         intent_key="REASON",
     )

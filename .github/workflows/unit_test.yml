@@ -43,6 +43,5 @@ jobs:
           echo "OPENAI_API_KEY=fake_key" >> .env
           echo "APP_NAME=GA_TEST" >> .env
 
-
       - name: Build and run test containers
         run: docker compose run --rm test
