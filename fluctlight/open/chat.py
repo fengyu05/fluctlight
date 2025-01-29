@@ -4,9 +4,20 @@ from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat import ParsedChatCompletion
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from fluctlight.settings import GPT_STRUCTURE_OUTPUT_MODEL, GPT_CHAT_MODEL
+from fluctlight.open.client import get_open_client
 
-from . import OPENAI_CLIENT
-from .alternatives import get_alt_client_from_model_key
+
+def get_provider_and_model_id(model_key: str) -> tuple[str, str]:
+    """
+    Get the provider and model_id from the model_key.
+    Examples:
+    - 'openai:gpt-3' -> ('openai', 'gpt-3')
+    """
+    provider, model_id = (
+        model_key.split(":", 1) if ":" in model_key else ("openai", model_key)
+    )
+    provider = provider.lower()
+    return provider, model_id
 
 
 def get_message_from_completion(completion: ChatCompletion, idx: int = 0) -> str:
@@ -42,14 +53,8 @@ def chat_complete(
     If the provider is 'openai', the OPENAI_CLIENT will be used.
     For other providers, the appropriate client will be fetched using get_alt_client_from_model_key.
     """
-    provider, model_id = (
-        model_key.split(":", 1) if ":" in model_key else ("openai", model_key)
-    )
-
-    if provider == "openai":
-        client = OPENAI_CLIENT
-    else:
-        client = get_alt_client_from_model_key(model_key)
+    provider, model_id = get_provider_and_model_id(model_key)
+    client = get_open_client(provider)
 
     if model_id in ["o1", "o1-mini"]:
         temperature = 1
@@ -85,14 +90,8 @@ def structure_chat_completion(
     If the provider is 'openai', the OPENAI_CLIENT will be used.
     For other providers, the appropriate client will be fetched using get_alt_client_from_model_key.
     """
-    provider, model_id = (
-        model_key.split(":", 1) if ":" in model_key else ("openai", model_key)
-    )
-
-    if provider == "openai":
-        client = OPENAI_CLIENT
-    else:
-        client = get_alt_client_from_model_key(model_key)
+    provider, model_id = get_provider_and_model_id(model_key)
+    client = get_open_client(provider)
 
     completion = client.beta.chat.completions.parse(
         temperature=0,

@@ -26,9 +26,11 @@ Transform your interaction experiences with Fluctlight, where innovation meets s
 
 ## Spotlights
 
-| RAG(Retrieval-Augmented Generation)                   | Image/Audio Support                    | Workflow base agent                     |
-|:----------------------------------:|:--------------------------------:|:--------------------------------:|
-| ![Spotlight 1 source](./doc/img/oak5.png)![Spotlight 1 retrieval](./doc/img/oak6.png) | ![Spotlight 2](./doc/img/oak4.png) | ![Spotlight 3](./doc/design/spotlight_taskbot.png) |
+
+
+| RAG(Retrieval-Augmented Generation)                   | Image/Audio Support                    | Workflow base agent                     | Local Reasoning model                       |
+|:----------------------------------:|:--------------------------------:|:--------------------------------:|:--------------------------------:|
+| ![Spotlight 1 source](./doc/img/oak5.png)![Spotlight 1 retrieval](./doc/img/oak6.png) | ![Spotlight 2](./doc/img/oak4.png) | ![Spotlight 3](./doc/img/spotlight_taskbot.png) | ![Local Reasoning model](./doc/img/spotlight_reasoning.png) |
 
 
 
@@ -137,9 +139,14 @@ Botchan can be run locally on your development machine or laptop. For a 24/7 onl
 
 - Consider deploying the application in a cloud Kubernetes environment, as it is already containerized.
 
+# Tutorial
+
+## Connecting Deepseek R1 locally LLM
+[How to Use a Self-Hosted LLM Server and Deploy Deepseek R1 as a Reasoning Model](./doc/deploy_deepseek_r1_locally.md)
+
 ## Discord Bot Setup
 
-Refer to the [Discord Bot Setup Tutorial](./doc/create_a_character_on_discord.md).
+[Create a character bot on Discord](./doc/create_a_character_on_discord.md).
 
 ## Slack Bot Setup
 

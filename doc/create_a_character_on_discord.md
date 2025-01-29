@@ -1,4 +1,4 @@
-# 
+# How to create an character bot on Discord
 
 # Step 1: Create a Discord Bot and Obtain a Token
 
