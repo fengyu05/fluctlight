@@ -18,6 +18,7 @@ from fluctlight.settings import (
 from fluctlight.constants import GPT_4O
 from fluctlight.utt.files import base64_encode_media, download_media
 from fluctlight.open.chat import chat_complete
+from fluctlight.open.think_format_util import extract_think_message
 
 logger = get_logger(__name__)
 
@@ -121,7 +122,7 @@ class OpenAiChatAgent(MessageIntentAgent):
                 "content": output_text,
             }
         )
-        return [output_text]
+        return extract_think_message(output_text)
 
     def has_image_in_content(self, content: list[dict[str, Any]]) -> bool:
         for item in content:
