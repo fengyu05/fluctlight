@@ -28,12 +28,12 @@ class TestRagIntentMatcher(unittest.TestCase):
 
     @skip_integration_tests
     def test_parse_intent_chat(self):
-        result = self.intent_matcher.parse_intent("Let's have a free chat")
+        result = self.intent_matcher.parse_intent_key("Let's have a free chat")
         self.assertEqual(result.key, "CHAT")
 
     @skip_integration_tests
     def test_parse_intent_shopping(self):
-        result = self.intent_matcher.parse_intent("Help me order sth")
+        result = self.intent_matcher.parse_intent_key("Help me order sth")
         self.assertEqual(result.key, shopping_assisist_intent_key)
 
     @skip_integration_tests
@@ -61,8 +61,8 @@ class TestRagIntentMatcher(unittest.TestCase):
             ),
             intent_json_payload=None,
         )
-        message_intent = self.intent_matcher.parse_final_state(state)
-        self.assertEqual(message_intent.key, shopping_assisist_intent_key)
+        message_intent_key = self.intent_matcher.parse_final_state(state)
+        self.assertEqual(message_intent_key, shopping_assisist_intent_key)
 
     def test_parse_final_state_with_secondary_intent(self):
         state = GraphState(
@@ -74,8 +74,8 @@ class TestRagIntentMatcher(unittest.TestCase):
             ),
             intent_json_payload=None,
         )
-        message_intent = self.intent_matcher.parse_final_state(state)
-        self.assertEqual(message_intent.key, shopping_assisist_intent_key)
+        message_intent_key = self.intent_matcher.parse_final_state(state)
+        self.assertEqual(message_intent_key, shopping_assisist_intent_key)
 
 
 # Run the tests

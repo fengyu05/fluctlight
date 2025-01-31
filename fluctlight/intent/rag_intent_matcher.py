@@ -14,7 +14,6 @@ from fluctlight.intent.intent_candidate import (
     parse_intent_candidate_json,
 )
 from fluctlight.intent.intent_matcher_base import IntentMatcher
-from fluctlight.intent.message_intent import MessageIntent, create_intent
 from fluctlight.logger import get_logger
 from fluctlight.utt.prompt_utils import construct_system_prompt
 from fluctlight.settings import FIREWORKS_API_KEY
@@ -174,7 +173,7 @@ class RagIntentMatcher(IntentMatcher):
         workflow.add_edge("refine_intent", END)
         return workflow.compile()
 
-    def parse_intent(self, text: str) -> MessageIntent:
+    def parse_intent_key(self, text: str) -> str:
         last_state = self.graph.invoke(
             {
                 "messages": [HumanMessage(content=text)],
@@ -202,17 +201,14 @@ class RagIntentMatcher(IntentMatcher):
             if agent.llm_matchable
         ]
 
-    def parse_final_state(self, state: GraphState) -> MessageIntent:
-        metadata = {
-            "method": "rag_matcher",
-        }
+    def parse_final_state(self, state: GraphState) -> str:
         intent_candidate = state["intent_candidate"]
         assert intent_candidate, "intent candidate cannot be None"
         for intent_key in self.intent_keylist:
             if intent_key in intent_candidate.intent_primary:
-                return MessageIntent(key=intent_key, metadata=metadata)
+                return intent_key
         ## secondary
         for intent_key in self.intent_keylist:
             if intent_key in intent_candidate.intent_secondary:
-                return MessageIntent(key=intent_key, metadata=metadata)
-        return create_intent(unknown=True)
+                return intent_key
+        return "CHAT"

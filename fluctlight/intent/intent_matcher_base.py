@@ -8,7 +8,7 @@ from fluctlight.intent.message_intent import (
     UNKNOWN_INTENT,
     MessageIntent,
     get_leading_emoji,
-    get_message_intent_by_emoji,
+    get_message_intent_by_text,
 )
 from fluctlight.logger import get_logger
 from fluctlight.settings import (
@@ -37,7 +37,7 @@ class IntentMatcher(ABC):
         self.catalog_manager = get_catalog_manager()
 
     @abstractmethod
-    def parse_intent(self, text: str) -> MessageIntent:
+    def parse_intent_key(self, text: str) -> str:
         pass
 
     def match_message_intent(self, message: IMessage) -> MessageIntent:
@@ -60,16 +60,15 @@ class IntentMatcher(ABC):
         else:
             # emoji > character > llm match
             if INTENT_EMOJI_MATCHING and message_intent.unknown:
-                message_intent = get_message_intent_by_emoji(message.text)
+                message_intent = get_message_intent_by_text(message.text)
             if INTENT_CHAR_MATCHING and message_intent.unknown:
-                message_intent = self.get_char_agent_intent(message.text)
+                message_intent = self.get_char_agent_intent(
+                    intent=message_intent, text=message.text
+                )
             if INTENT_LLM_MATCHING and message_intent.unknown:
-                message_intent = self.parse_intent(message.text)
-
-        if message_intent.unknown:
-            logger.info("falling back to default chat intent")
-            message_intent = DEFAULT_CHAT_INTENT
-
+                message_intent = self.get_llm_agent_intent(
+                    intent=message_intent, text=message.text
+                )
         logger.info("Matched intent", intent=message_intent)
         if not self.disable_cache:
             self.intent_by_thread[message.thread_message_id] = message_intent
@@ -84,15 +83,27 @@ class IntentMatcher(ABC):
             self._chars_map = chars_map
         return self._chars_map
 
-    def get_char_agent_intent(self, text: str) -> MessageIntent:
+    def get_char_agent_intent(self, intent: MessageIntent, text: str) -> MessageIntent:
         if CHAR_AGENT_BIND:
-            return MessageIntent(key="CHAR", metadata={"char_id": CHAR_AGENT_BIND})
-        emoji = get_leading_emoji(text)
-        chars_map = self.get_char_emoji_map()
-        if emoji in chars_map:
-            return MessageIntent(key="CHAR", metadata={"char_id": chars_map[emoji]})
+            intent.key = "CHAR"
+            intent.metadata = {"char_id": CHAR_AGENT_BIND}
+            intent.unknown = False
+            intent.metadata["char_bind"] = True
         else:
-            return UNKNOWN_INTENT
+            emoji = get_leading_emoji(text)
+            chars_map = self.get_char_emoji_map()
+            if emoji in chars_map:
+                intent.key = "CHAR"
+                intent.metadata = {"char_id": chars_map[emoji]}
+                intent.unknown = False
+                intent.metadata["char_match"] = True
+        return intent
+
+    def get_llm_agent_intent(self, intent: MessageIntent, text: str) -> MessageIntent:
+        intent.key = self.parse_intent_key(text)
+        intent.unknown = False
+        intent.metadata["llm_match"] = True
+        return intent
 
 
 class IntentMatcherBase(IntentMatcher):
@@ -103,5 +114,5 @@ class IntentMatcherBase(IntentMatcher):
     ) -> None:
         super().__init__(agents=agents, disable_cache=disable_cache)
 
-    def parse_intent(self, text: str) -> MessageIntent:
-        return DEFAULT_CHAT_INTENT
+    def parse_intent_key(self, text: str) -> MessageIntent:
+        return "CHAT"
