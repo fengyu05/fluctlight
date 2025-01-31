@@ -121,8 +121,14 @@ INTENT_EMOJI_MATCHING=false # Whether to enable emjoi to agent mapping
 
 These are the model config
 ```
-OPENAI_GPT_MODEL_ID="gpt-4o" # To config what model use for all the glue LLM call. Can use mini to save cost.
-OPENAI_CHATBOT_MODEL_ID="gpt-4o" # To config what model use for the character tone.
+# Models config
+GPT_DEFAULT_MODEL="gpt-4o"
+## Use for agent workflow
+GPT_STRUCTURE_OUTPUT_MODEL="gpt-4o"
+## Use for chat
+GPT_CHAT_MODEL="o1-mini"
+## Use for reason
+GPT_REASON_MODEL="o1"
 ```
 
 These are for debugging
