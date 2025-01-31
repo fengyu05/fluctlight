@@ -56,7 +56,6 @@ class TestChat(unittest.TestCase):
 
         self.assertEqual(response, mock_response)
         mock_client.chat.completions.create.assert_called_with(
-            temperature=0.0,
             model="gpt-3",
             messages=messages,
         )
@@ -75,7 +74,6 @@ class TestChat(unittest.TestCase):
 
         self.assertEqual(response, mock_response)
         mock_client.beta.chat.completions.parse.assert_called_with(
-            temperature=0,
             model="gpt-3",
             messages=messages,
             response_format=dict,

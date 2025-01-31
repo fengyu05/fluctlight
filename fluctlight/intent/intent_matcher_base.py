@@ -69,6 +69,10 @@ class IntentMatcher(ABC):
                 message_intent = self.get_llm_agent_intent(
                     intent=message_intent, text=message.text
                 )
+        if message_intent.unknown:
+            message_intent.key = "CHAT"
+            message_intent.metadata["fallback_to_chat"] = True
+
         logger.info("Matched intent", intent=message_intent)
         if not self.disable_cache:
             self.intent_by_thread[message.thread_message_id] = message_intent

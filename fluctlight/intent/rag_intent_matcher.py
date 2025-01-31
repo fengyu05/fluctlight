@@ -5,8 +5,6 @@ from langchain_fireworks import ChatFireworks
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from typing_extensions import TypedDict
-
-from fluctlight.constants import FIREWORKS_MIXTRAL_22B
 from fluctlight.intent.intent_agent import IntentAgent
 from fluctlight.intent.intent_candidate import (
     EXAMPLE_INTENT_CANDIDATE,
@@ -20,6 +18,7 @@ from fluctlight.settings import FIREWORKS_API_KEY
 
 logger = get_logger(__name__)
 
+FIREWORKS_MIXTRAL_22B = "accounts/fireworks/models/mixtral-8x22b-instruct"
 
 _MATCH_PROMPT = """
 The system will determine the most appropriate intents from a user message using the following steps:

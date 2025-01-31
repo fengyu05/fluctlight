@@ -32,7 +32,6 @@ def get_parsed_choice_from_completion(completion: ChatCompletion, idx: int = 0) 
 def chat_complete(
     messages: list[ChatCompletionMessageParam],
     model_key: str = GPT_CHAT_MODEL,
-    temperature: float = 0.0,
 ) -> ChatCompletion:
     """
     Generate a chat completion based on the provided messages.
@@ -41,7 +40,6 @@ def chat_complete(
         messages (list[ChatCompletionMessageParam]): The list of messages to be used for the chat completion.
         model_key (str): The model key in the format 'provider:model_id'. Defaults to 'openai:gpt-3'.
                          If the provider is not specified, it defaults to OpenAI.
-        temperature (float): The temperature to use for the completion. Defaults to 0.0.
 
     Returns:
         ChatCompletion: The chat completion result.
@@ -55,11 +53,7 @@ def chat_complete(
     """
     provider, model_id = get_provider_and_model_id(model_key)
     client = get_open_client(provider)
-
-    if model_id in ["o1", "o1-mini"]:
-        temperature = 1
     return client.chat.completions.create(
-        temperature=temperature,
         model=model_id,
         messages=messages,
     )
@@ -94,7 +88,6 @@ def structure_chat_completion(
     client = get_open_client(provider)
 
     completion = client.beta.chat.completions.parse(
-        temperature=0,
         model=model_id,
         messages=messages,
         response_format=output_schema,

@@ -23,14 +23,6 @@ class MessageIntent(BaseModel):
             raise ValueError("The key must be a string.")
         return v.upper()
 
-    def equal_wo_metadata(self, other: "MessageIntent") -> bool:
-        return (
-            self.key == other.key
-            and self.reason == other.reason
-            and self.search == other.search
-            and self.unknown == other.unknown
-        )
-
     def set_metadata(self, **kwargs: MessageIntentMetadataType):
         """Set multiple metadata key-value pairs at once.
 

@@ -13,14 +13,6 @@ class TestMessageIntent(unittest.TestCase):
         intent = MessageIntent(key="testKey")
         self.assertEqual(intent.key, "TESTKEY")
 
-    def test_equal_wo_metadata(self):
-        intent1 = MessageIntent(key="somekey", metadata={"some": "data2"})
-        intent2 = MessageIntent(key="SomeKey", metadata={"some": "data"})
-        self.assertTrue(intent1.equal_wo_metadata(intent2))
-
-        intent3 = MessageIntent(key="otherkey")
-        self.assertFalse(intent1.equal_wo_metadata(intent3))
-
     def test_create_intent_with_default(self):
         intent = create_intent("test")
         self.assertEqual(intent.key, "TEST")
@@ -38,6 +30,16 @@ class TestMessageIntent(unittest.TestCase):
         intent = get_message_intent_by_text(":dog:")
         self.assertEqual(intent.key, "")
         self.assertTrue(intent.unknown)
+
+    def test_get_message_intent_by_emoji_with_annotation_search(self):
+        intent = get_message_intent_by_text(":cat: :search:")
+        self.assertTrue(intent.search)
+        self.assertFalse(intent.reason)
+
+    def test_get_message_intent_by_emoji_with_annotation_reason(self):
+        intent = get_message_intent_by_text(":cat: :reason:")
+        self.assertTrue(intent.reason)
+        self.assertFalse(intent.search)
 
     def test_has_emoji_variants(self):
         self.assertTrue(has_emoji_variants("REASON", ":reason: hello"))

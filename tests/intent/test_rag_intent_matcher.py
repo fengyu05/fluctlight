@@ -29,12 +29,12 @@ class TestRagIntentMatcher(unittest.TestCase):
     @skip_integration_tests
     def test_parse_intent_chat(self):
         result = self.intent_matcher.parse_intent_key("Let's have a free chat")
-        self.assertEqual(result.key, "CHAT")
+        self.assertEqual(result, "CHAT")
 
     @skip_integration_tests
     def test_parse_intent_shopping(self):
         result = self.intent_matcher.parse_intent_key("Help me order sth")
-        self.assertEqual(result.key, shopping_assisist_intent_key)
+        self.assertEqual(result, shopping_assisist_intent_key)
 
     @skip_integration_tests
     def test_match_intent_node(self):
