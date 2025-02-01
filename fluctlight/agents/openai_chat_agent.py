@@ -45,6 +45,7 @@ class OpenAiChatAgent(MessageIntentAgent):
         buffer_limit: int = 20,
         chat_model_id: str = GPT_CHAT_MODEL,
         reason_model_id: str = GPT_REASON_MODEL,
+        vision_model_id: str = GPT_VISION_MODEL,
         intent_key: str = INTENT_KEY,
     ) -> None:
         super().__init__(intent=create_intent(intent_key))
@@ -55,6 +56,7 @@ class OpenAiChatAgent(MessageIntentAgent):
         self.bearer_token = SLACK_APP_OAUTH_TOKENS_FOR_WS if is_slack_bot() else None
         self.chat_model_id = chat_model_id
         self.reason_model_id = reason_model_id
+        self.vision_model_id = vision_model_id
 
     @property
     def name(self) -> str:
@@ -112,7 +114,7 @@ class OpenAiChatAgent(MessageIntentAgent):
         )
 
         if self.has_image_in_content(content) and not vision_support_model(model_id):
-            model_id = GPT_VISION_MODEL
+            model_id = self.vision_model_id
 
         response = chat_complete(
             messages=self.message_buffer[thread_id].copy(), model_key=model_id

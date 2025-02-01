@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from fluctlight.agents.openai_chat_agent import OpenAiChatAgent
-from fluctlight.intent.message_intent import DEFAULT_CHAT_INTENT
+from fluctlight.intent.message_intent import create_intent, DEFAULT_CHAT_INTENT
 from tests.data.imessages import (
     MESSAGE_HELLO_WORLD,
     MESSAGE_HELLO_WORLD2,
@@ -44,7 +44,6 @@ class TestOpenAiChatAgent(unittest.TestCase):
             # Replace 'type' with the actual key used to determine message type
             self.assertEqual(expected_order[i], message["role"])
 
-    @patch("fluctlight.agents.openai_chat_agent.GPT_REASON_MODEL", "o3-mini")
     @patch("fluctlight.agents.openai_chat_agent.chat_complete")
     def test_process_message_plain_text_reasoning(self, mock_chat_complete: MagicMock):
         # O series model doesn't support system/developer role message.
@@ -55,13 +54,14 @@ class TestOpenAiChatAgent(unittest.TestCase):
             MagicMock(message=MagicMock(content=mock_response_text))
         ]
         mock_chat_complete.return_value = mock_response
-        agent = OpenAiChatAgent()
+        agent = OpenAiChatAgent(reason_model_id="o3-mini", chat_model_id="gpt-4o")
 
         test_message_reason = MESSAGE_HELLO_WORLD.model_copy()
-        test_message_reason.text = ":think: what is 1+2*3"
+        test_message_reason.text = "what is 1+2*3 :think: "
 
         response1 = agent.process_message(
-            message=test_message_reason, message_intent=DEFAULT_CHAT_INTENT
+            message=test_message_reason,
+            message_intent=create_intent(key="CHAT", reason=True),
         )
 
         self.assertEqual(response1, [mock_response_text])
@@ -70,7 +70,7 @@ class TestOpenAiChatAgent(unittest.TestCase):
             messages=[
                 {
                     "role": "user",
-                    "content": [{"type": "text", "text": ":think: what is 1+2*3"}],
+                    "content": [{"type": "text", "text": test_message_reason.text}],
                 },
             ],
         )
@@ -86,7 +86,6 @@ class TestOpenAiChatAgent(unittest.TestCase):
             # Replace 'type' with the actual key used to determine message type
             self.assertEqual(expected_order[i], message["role"])
 
-    @patch("fluctlight.agents.openai_chat_agent.GPT_VISION_MODEL", "gpt-vision")
     @patch("fluctlight.agents.openai_chat_agent.base64_encode_media")
     @patch("fluctlight.agents.openai_chat_agent.chat_complete")
     def test_process_message_with_vision_input(
@@ -99,9 +98,14 @@ class TestOpenAiChatAgent(unittest.TestCase):
             MagicMock(message=MagicMock(content=mock_response_text))
         ]
         mock_chat_complete.return_value = mock_response
-        mock_base64_encode_media.return_value = "base64_image_encoded"
+        base64_image_encoded = "base64_image_encoded"
+        mock_base64_encode_media.return_value = base64_image_encoded
 
-        agent = OpenAiChatAgent()
+        agent = OpenAiChatAgent(
+            chat_model_id="gpt-chat",
+            vision_model_id="gpt-vision",
+            reason_model_id="gpt-reason",
+        )
         test_message_image = MESSAGE_WITH_IMAGE.model_copy()
         test_message_image.text = ":think: what in this image?"
 
@@ -114,18 +118,22 @@ class TestOpenAiChatAgent(unittest.TestCase):
             model_key="gpt-vision",
             messages=[
                 {
+                    "role": "system",
+                    "content": "\nYou are Fluctlight a helpful assistant bot.\n",
+                },
+                {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": ":think: what in this image?"},
+                        {"type": "text", "text": test_message_image.text},
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": "data:image/jpeg;base64,base64_image_encoded",
+                                "url": f"data:image/jpeg;base64,{base64_image_encoded}",
                                 "detail": "low",
                             },
                         },
                     ],
-                }
+                },
             ],
         )
         mock_base64_encode_media.assert_called_once()

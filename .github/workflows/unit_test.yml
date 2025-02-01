@@ -39,9 +39,10 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "FIREWORKS_API_KEY=fake_key" >> .env
-          echo "OPENAI_API_KEY=fake_key" >> .env
-          echo "APP_NAME=GA_TEST" >> .env
+          echo "APP_NAME=Fluctlight" >> .env
+          echo "TEST_MODE=true" >> .env
+          echo "INTENT_LLM_MATCHING=true" >> .env
+          echo "INTENT_CHAR_MATCHING=false" >> .env
 
       - name: Build and run test containers
         run: docker compose run --rm test
