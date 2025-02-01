@@ -4,7 +4,6 @@ from fluctlight.utt.config import (
     config_default_int,
     config_default_float,
 )
-import fluctlight.constants as C
 
 # App config
 ENV = config_default("ENV", "dev")
@@ -46,16 +45,19 @@ OPENAI_API_KEY = config_default("OPENAI_API_KEY")
 # GPT MODEL IDs
 
 ## Default model
-GPT_DEFAULT_MODEL = config_default("GPT_DEFAULT_MODEL", C.GPT_4O)
+GPT_DEFAULT_MODEL = config_default("GPT_DEFAULT_MODEL", "gpt-4o")
 
 ## Use for agent workflow
-GPT_STRUCTURE_OUTPUT_MODEL = config_default("GPT_STRUCTURE_OUTPUT_MODEL", C.GPT_4O)
+GPT_STRUCTURE_OUTPUT_MODEL = config_default("GPT_STRUCTURE_OUTPUT_MODEL", "gpt-4o")
 
 ## Use for chat
-GPT_CHAT_MODEL = config_default("GPT_CHAT_MODEL", C.GPT_4O)
+GPT_CHAT_MODEL = config_default("GPT_CHAT_MODEL", "gpt-4o")
+
+## Use for chat
+GPT_VISION_MODEL = config_default("GPT_VISION_MODEL", "gpt-4o")
 
 ## Use for reason
-GPT_REASON_MODEL = config_default("GPT_REASON_MODEL", C.GPT_O1)
+GPT_REASON_MODEL = config_default("GPT_REASON_MODEL", "o1")
 
 # FIREWORKS API KEY, alt to OpenAI
 FIREWORKS_API_KEY = config_default("FIREWORKS_API_KEY")

@@ -50,7 +50,7 @@ class MessageIntentAgent(Task, IntentAgent):
         message_intent: MessageIntent = self._require_input(
             kwargs=kwds, key="message_intent", value_type=MessageIntent
         )
-        return message_intent.equal_wo_metadata(self.intent)
+        return message_intent.key == self.intent.key
 
     @property
     def llm_matchable(self) -> bool:

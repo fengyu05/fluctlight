@@ -1,5 +1,6 @@
 import unittest
 
+from unittest.mock import patch
 from fluctlight.agents.miao_agent import MiaoAgent
 from fluctlight.agents.openai_chat_agent import OpenAiChatAgent
 from fluctlight.intent.intent_agent import IntentAgent
@@ -7,22 +8,19 @@ from fluctlight.intent.intent_matcher_base import IntentMatcher, IntentMatcherBa
 from fluctlight.intent.message_intent import (
     DEFAULT_CHAT_INTENT,
     MessageIntent,
-    create_intent,
 )
 from tests.data.imessages import (
     MESSAGE_HELLO_WORLD,
     MESSAGE_HELLO_WORLD2,
 )
 
-_TEST_INTENT = create_intent("test")
-
 
 class IntentMacherForTest(IntentMatcher):
     def __init__(self, agents: list[IntentAgent]) -> None:
         super().__init__(agents=agents)
 
-    def parse_intent(self, text: str) -> MessageIntent:
-        return _TEST_INTENT
+    def parse_intent_key(self, text: str) -> MessageIntent:
+        return "TEST"
 
 
 class TestMessageIntentAgent(unittest.TestCase):
@@ -39,6 +37,9 @@ class TestMessageIntentAgent(unittest.TestCase):
             ],
         )
 
+    @patch("fluctlight.intent.intent_matcher_base.INTENT_LLM_MATCHING", True)
+    @patch("fluctlight.intent.intent_matcher_base.INTENT_CHAR_MATCHING", False)
+    @patch("fluctlight.intent.intent_matcher_base.INTENT_EMOJI_MATCHING", True)
     def test_intent_by_thread(self):
         test_intent_matcher = IntentMacherForTest(
             agents=[
@@ -56,7 +57,8 @@ class TestMessageIntentAgent(unittest.TestCase):
         test_intent_matcher.match_message_intent(message1)
 
         intent_1 = test_intent_matcher.intent_by_thread[message1.thread_message_id]
-        self.assertEqual(intent_1, _TEST_INTENT)
+        self.assertFalse(intent_1.unknown)
+        self.assertEqual(intent_1.key, "TEST")
 
         # Process the second message in the same thread
         test_intent_matcher.match_message_intent(message2)

@@ -4,7 +4,7 @@ from discord.user import User
 
 from fluctlight.agents.character import create_default_character_agent
 from fluctlight.agents.message_intent_agent import MessageIntentAgent
-from fluctlight.agents.openai_chat_agent import OpenAiChatAgent, create_reason_agent
+from fluctlight.agents.openai_chat_agent import OpenAiChatAgent
 from fluctlight.core.bot_proxy import BotProxy
 from fluctlight.data_model.interface import IChannel
 from fluctlight.discord.adapter import Adapter
@@ -34,7 +34,6 @@ class DiscordBotProxy(BotProxy, DiscordChat, DiscordReaction, DiscordGuild, Sing
         self.chat_agent = OpenAiChatAgent()
         self.agents = [
             create_default_character_agent(),
-            create_reason_agent(),  # Reasoning agent
             self.chat_agent,
         ]
         self.intent_matcher = get_default_intent_matcher(self.agents)

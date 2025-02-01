@@ -103,8 +103,6 @@ services:
     build:
       context: ./
       dockerfile: ./docker/Dockerfile.ci
-    env_file:
-      - .env
     environment:
       - INTENT_LLM_MATCHING=true
       - INTENT_CHAR_MATCHING=false
@@ -118,12 +116,13 @@ services:
       context: ./
       dockerfile: ./docker/Dockerfile.ci
     env_file:
-     - .env
+      - .env
     environment:
+      - APP_NAME=Fluctlight
       - INTENT_LLM_MATCHING=true
       - INTENT_CHAR_MATCHING=false
-      - RUN_INTEGRATION_TESTS=1
       - TEST_MODE=true
+      - RUN_INTEGRATION_TESTS=1
     command: ["./run_tests.sh", "${TEST_FILES:-}"]
 
   shell:

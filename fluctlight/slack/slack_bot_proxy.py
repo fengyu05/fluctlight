@@ -3,7 +3,7 @@ from slack_sdk.errors import SlackApiError
 
 from fluctlight.agents.character import create_default_character_agent
 from fluctlight.agents.message_intent_agent import MessageIntentAgent
-from fluctlight.agents.openai_chat_agent import OpenAiChatAgent, create_reason_agent
+from fluctlight.agents.openai_chat_agent import OpenAiChatAgent
 from fluctlight.core.bot_proxy import BotProxy
 from fluctlight.data_model.slack import MessageEvent
 from fluctlight.intent.intent_matcher_base import IntentMatcher
@@ -38,7 +38,6 @@ class SlackBotProxy(BotProxy, MessagesFetcher, SlackChat, SlackReaction, Singlet
         self.agents = [
             create_default_character_agent(),
             self.chat_agent,
-            create_reason_agent(),  # Reasoning agent
             create_shopping_assist_task_graph_agent(),
         ]
         self.intent_matcher = get_default_intent_matcher(self.agents)
@@ -56,15 +55,12 @@ class SlackBotProxy(BotProxy, MessagesFetcher, SlackChat, SlackReaction, Singlet
 
         self.add_reaction(event=message, reaction_name="eyes")
         message_intent = self.intent_matcher.match_message_intent(message=imessage)
-        if message_intent.unknown:
-            self.chat_agent(message=imessage, message_intent=message_intent)
-        else:
-            for agent in self.agents:
-                msgs = agent(message=imessage, message_intent=message_intent)
-                if msgs is None:  ## agent didn't process this intent
-                    continue
-                for msg in msgs:
-                    self.reply_to_message(event=message, text=msg)
+        for agent in self.agents:
+            msgs = agent(message=imessage, message_intent=message_intent)
+            if msgs is None:  ## agent didn't process this intent
+                continue
+            for msg in msgs:
+                self.reply_to_message(event=message, text=msg)
 
     def get_bot_user_id(self) -> str:
         """
