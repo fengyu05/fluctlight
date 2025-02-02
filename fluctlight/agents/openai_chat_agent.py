@@ -24,6 +24,7 @@ from fluctlight.settings import (
 from fluctlight.utt.files import base64_encode_media, download_media
 from fluctlight.open.chat import chat_complete
 from fluctlight.open.think_format_util import extract_think_message
+from fluctlight.search.client import SerpApiClient
 
 logger = get_logger(__name__)
 
@@ -57,6 +58,7 @@ class OpenAiChatAgent(MessageIntentAgent):
         self.chat_model_id = chat_model_id
         self.reason_model_id = reason_model_id
         self.vision_model_id = vision_model_id
+        self.serp_client = SerpApiClient()
 
     @property
     def name(self) -> str:
@@ -85,6 +87,7 @@ class OpenAiChatAgent(MessageIntentAgent):
         """
         thread_id = message.thread_message_id
         model_id = self.reason_model_id if message_intent.reason else self.chat_model_id
+
         # Move the accessed thread_id to the end to mark it as recently used
         if thread_id in self.message_buffer:
             self.message_buffer.move_to_end(thread_id)

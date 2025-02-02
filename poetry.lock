@@ -1178,6 +1178,19 @@ reauth = ["pyu2f (>=0.1.5)"]
 requests = ["requests (>=2.20.0,<3.0.0.dev0)"]
 
 [[package]]
+name = "google-search-results"
+version = "2.4.2"
+description = "Scrape and search localized results from Google, Bing, Baidu, Yahoo, Yandex, Ebay, Homedepot, youtube at scale using SerpApi.com"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "google_search_results-2.4.2.tar.gz", hash = "sha256:603a30ecae2af8e600b22635757a6df275dad4b934f975e67878ccd640b78245"},
+]
+
+[package.dependencies]
+requests = "*"
+
+[[package]]
 name = "googleapis-common-protos"
 version = "1.66.0"
 description = "Common protobufs used in Google APIs"
@@ -5429,4 +5442,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11.10"
-content-hash = "2157033d5ec5477f61379afaf3506985d7c182bad219681723631518c2a38782"
+content-hash = "77a74d7980a3dbec19dcb3d3fa803734281be711ae784930b20588188d791d1a"

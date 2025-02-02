@@ -40,6 +40,7 @@ flatbuffers==24.12.23 ; python_full_version >= "3.11.10" and python_full_version
 frozenlist==1.5.0 ; python_full_version >= "3.11.10" and python_version < "4.0"
 fsspec==2024.12.0 ; python_full_version >= "3.11.10" and python_version < "4.0"
 google-auth==2.37.0 ; python_full_version >= "3.11.10" and python_full_version < "4.0.0"
+google-search-results==2.4.2 ; python_full_version >= "3.11.10" and python_full_version < "4.0.0"
 googleapis-common-protos==1.66.0 ; python_full_version >= "3.11.10" and python_full_version < "4.0.0"
 greenlet==3.1.1 ; python_full_version >= "3.11.10" and python_version < "4.0"
 grpcio==1.68.1 ; python_full_version >= "3.11.10" and python_full_version < "4.0.0"

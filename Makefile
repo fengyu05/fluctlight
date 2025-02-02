@@ -28,6 +28,6 @@ debug-server: requirements.txt ## start app server with debug mode
 api-server: requirements.txt ## start app server
 	docker compose up --build api
 
-test: docker-test  ## Unit test, alias for docker-test
+test: requirements-dev.txt docker-test  ## Unit test, alias for docker-test
 
-test-int: docker-test-int  ## Intergation test, alias for docker-test-init
+test-int: requirements-dev.txt docker-test-int  ## Intergation test, alias for docker-test-init

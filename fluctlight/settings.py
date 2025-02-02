@@ -70,6 +70,9 @@ INTENT_EMOJI_MATCHING = config_default_bool("INTENT_EMOJI_MATCHING", True)
 # For INTENT_CHAR_MATCHING
 CHAR_AGENT_BIND = config_default("CHAR_AGENT_BIND")
 
+# For SerpAPI
+SERP_API_KEY = config_default("SERP_API_KEY")
+
 # Whether to use SQL char DB
 USE_SQL_CHAR_DB = config_default_bool("USE_SQL_CHAR_DB", False)
 
